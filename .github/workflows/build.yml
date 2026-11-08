@@ -1,0 +1,33 @@
+name: Build XFive Live
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # BELUM DIVERIFIKASI: sesuaikan dengan versi Gradle yang dibutuhkan Fabric Loom 26.x.
+          gradle-version: "9.2"
+
+      - name: Build mod jar
+        run: gradle build --no-daemon
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: XFiveLive-1.0.0
+          path: build/libs/*.jar

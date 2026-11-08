@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "xfive-live",
+  "version": "${version}",
+  "name": "X FIVE LIVE",
+  "description": "Client-side HUD: music player, synced lyrics, and live chat panel.",
+  "authors": [],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.xfive.live.XFiveLiveClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
