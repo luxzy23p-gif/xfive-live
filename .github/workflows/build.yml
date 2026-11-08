@@ -21,7 +21,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           # BELUM DIVERIFIKASI: sesuaikan dengan versi Gradle yang dibutuhkan Fabric Loom 26.x.
-          gradle-version: "9.2"
+          gradle-version: "9.8.2"
 
       - name: Build mod jar
         run: gradle build --no-daemon
