@@ -56,6 +56,7 @@ File: `config/xfive-live.properties` (dibuat otomatis saat pertama kali disimpan
 
 | Tombol | Fungsi |
 |---|---|
+| Right Shift | Buka menu pengaturan X FIVE LIVE |
 | F8 | Tampilkan/sembunyikan HUD |
 | F9 | Tampilkan/sembunyikan lirik |
 | F10 | Tampilkan/sembunyikan chat |

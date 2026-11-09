@@ -3,6 +3,7 @@ package com.xfive.live;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
+import com.xfive.live.gui.XFiveScreen;
 import com.xfive.live.hud.LiveChatHud;
 import com.xfive.live.hud.LyricsHud;
 import com.xfive.live.hud.MusicHud;
@@ -17,6 +18,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -38,22 +40,36 @@ public final class XFiveLiveClient implements ClientModInitializer {
     public static final LyricsManager LYRICS = new LyricsManager();
     public static final ChatManager CHAT = new ChatManager();
 
+    static final String SOURCE_FILE = "folder-musik.txt";
+    private static final String SOURCE_TEMPLATE = String.join("\n",
+            "# Tambahkan folder atau file lagu pribadi, satu per baris.",
+            "# Contoh folder: /storage/emulated/0/Music",
+            "# Contoh file:   /storage/emulated/0/Download/lagu.mp3",
+            "# Baris yang diawali tanda # diabaikan.",
+            "");
+
     private static KeyMapping hudKey;
     private static KeyMapping lyricsKey;
     private static KeyMapping chatKey;
+    private static KeyMapping settingsKey;
     private static PlaylistManager.Track lastTrack;
     private static boolean autoResumeDone = false;
 
     @Override
     public void onInitializeClient() {
         CONFIG.load();
-        applyConfigToManagers();
+        reloadMusic();
+        MUSIC.setVolume(CONFIG.defaultVolume);
+        CHAT.setMaxMessages(CONFIG.maxMessages);
+        CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
+        CHAT.setIntervalMs(CONFIG.messageSpeedMs);
 
         KeyMapping.Category category =
                 KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
         hudKey = register("key.xfive.hud", GLFW.GLFW_KEY_F8, category);
         lyricsKey = register("key.xfive.lyrics", GLFW.GLFW_KEY_F9, category);
         chatKey = register("key.xfive.chat", GLFW.GLFW_KEY_F10, category);
+        settingsKey = register("key.xfive.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, category);
 
         HudElementRegistry.attachElementBefore(
                 VanillaHudElements.CHAT,
@@ -71,8 +87,12 @@ public final class XFiveLiveClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> MUSIC.shutdown());
     }
 
-    private static void applyConfigToManagers() {
-        // Folder default: <folder game>/xfive-music. Dibuat otomatis agar bisa langsung diisi lagu.
+    /**
+     * Memuat ulang daftar lagu dari folder default (xfive-music) dan folder-musik.txt.
+     * Dipanggil saat startup dan dari tombol di menu pengaturan.
+     */
+    public static int reloadMusic() {
+        // Folder default dibuat otomatis agar bisa langsung diisi lagu.
         Path folder = CONFIG.musicFolder.isBlank()
                 ? FabricLoader.getInstance().getGameDir().resolve("xfive-music")
                 : Path.of(CONFIG.musicFolder.strip());
@@ -81,23 +101,11 @@ public final class XFiveLiveClient implements ClientModInitializer {
         } catch (IOException ignored) {
             // folder tidak bisa dibuat, status akan menampilkan folder kosong
         }
-        MUSIC.setSources(musicSources(folder));
-        MUSIC.setVolume(CONFIG.defaultVolume);
-        CHAT.setMaxMessages(CONFIG.maxMessages);
-        CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
-        CHAT.setIntervalMs(CONFIG.messageSpeedMs);
+        return MUSIC.setSources(musicSources(folder));
     }
 
-    static final String SOURCE_FILE = "folder-musik.txt";
-    private static final String SOURCE_TEMPLATE = String.join("\n",
-            "# Tambahkan folder atau file lagu pribadi, satu per baris.",
-            "# Contoh folder: /storage/emulated/0/Music",
-            "# Contoh file:   /storage/emulated/0/Download/lagu.mp3",
-            "# Baris yang diawali tanda # diabaikan.",
-            "");
-
     /**
-     * Sumber musik: folder default (xfive-music) ditambah setiap baris di folder-musik.txt.
+     * Sumber musik: folder default ditambah setiap baris di folder-musik.txt.
      * File daftar dibuat otomatis berisi petunjuk jika belum ada.
      */
     static List<Path> musicSources(Path defaultDir) {
@@ -132,6 +140,9 @@ public final class XFiveLiveClient implements ClientModInitializer {
     }
 
     private static void onTick() {
+        while (settingsKey.consumeClick()) {
+            Minecraft.getInstance().setScreenAndShow(new XFiveScreen());
+        }
         while (hudKey.consumeClick()) {
             CONFIG.showHud = !CONFIG.showHud;
             CONFIG.save();
