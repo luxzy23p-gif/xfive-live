@@ -25,6 +25,16 @@ Kalau folder itu belum ada, buat sendiri dengan nama persis `xfive-music` (huruf
    Dengan pola ini, nama artis dan judul tampil di HUD.
 4. (Opsional) Lirik bisa ditaruh di file **Artis - Judul.lrc** di folder yang sama.
 
+### Cara memasukkan lagu dari file ZIP
+
+1. Unduh lagu dalam bentuk ZIP seperti biasa.
+2. Buka aplikasi **File**, lalu ekstrak (unzip) file ZIP tersebut. Hasilnya berupa file .mp3, .ogg, atau .wav.
+3. Salin file-file lagu itu ke folder **xfive-music** (lihat Langkah 2).
+4. Buka game, tekan **Right Shift**, lalu tekan **Muat ulang daftar lagu**.
+5. Di menu, perhatikan baris **Folder lagu** dan **Jumlah lagu**. Baris itu menampilkan lokasi folder yang sedang dipakai dan berapa lagu yang terbaca.
+
+Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manual ke folder yang ditampilkan di menu.
+
 ## Langkah 4: Muat ulang lagu di dalam game
 
 1. Buka game, lalu tekan **Right Shift** untuk membuka menu X FIVE LIVE.

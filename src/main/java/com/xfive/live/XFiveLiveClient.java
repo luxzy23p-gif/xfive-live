@@ -49,6 +49,9 @@ public final class XFiveLiveClient implements ClientModInitializer {
             "# Baris yang diawali tanda # diabaikan.",
             "");
 
+    /** Folder musik yang sedang dipakai, ditampilkan di menu pengaturan. */
+    public static Path musicFolder = null;
+
     private static KeyMapping hudKey;
     private static KeyMapping lyricsKey;
     private static KeyMapping chatKey;
@@ -106,6 +109,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
         } catch (IOException ignored) {
             // folder tidak bisa dibuat, status akan menampilkan folder kosong
         }
+        musicFolder = folder;
         return MUSIC.setSources(musicSources(folder));
     }
 

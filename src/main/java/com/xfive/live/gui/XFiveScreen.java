@@ -4,6 +4,7 @@ import com.xfive.live.XFiveLiveClient;
 import com.xfive.live.config.XFiveConfig;
 import com.xfive.live.music.PlaylistManager;
 import com.xfive.live.render.GlassPanelRenderer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.nio.file.Path;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -67,6 +69,8 @@ public final class XFiveScreen extends Screen {
                 () -> XFiveLiveClient.MUSIC.previous()));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Muat ulang daftar lagu",
                 () -> XFiveLiveClient.reloadMusic()));
+        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Daftar lagu",
+                () -> Minecraft.getInstance().setScreenAndShow(new SongListScreen(this))));
         addRenderableWidget(labelled(rightX, row(r++), BTN_W,
                 () -> "Posisi lirik: " + LYRICS_POS[c.lyricsPosition],
                 () -> c.lyricsPosition = (c.lyricsPosition + 1) % LYRICS_POS.length));
@@ -97,6 +101,12 @@ public final class XFiveScreen extends Screen {
         String now = t == null ? XFiveLiveClient.MUSIC.status() : t.title() + " - " + t.artist();
         GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(now, 60), leftX, height - 50,
                 GlassPanelRenderer.MUTED);
+        Path folder = XFiveLiveClient.musicFolder;
+        String folderText = folder == null ? "-" : tail(folder.toString(), 46);
+        GlassPanelRenderer.text(g, font, "Folder lagu: " + folderText, leftX, height - 74,
+                GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "Jumlah lagu: " + XFiveLiveClient.MUSIC.playlist().size(), leftX,
+                height - 62, GlassPanelRenderer.MUTED);
     }
 
     @Override
@@ -108,6 +118,10 @@ public final class XFiveScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static String tail(String s, int max) {
+        return s.length() <= max ? s : "..." + s.substring(s.length() - max);
     }
 
     private int row(int index) {
