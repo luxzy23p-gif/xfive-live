@@ -1,0 +1,64 @@
+# Panduan Musik X FIVE LIVE (Android, Zalith Launcher)
+
+Panduan ini untuk memasukkan lagu pribadi secara manual, tanpa Spotify atau YouTube.
+
+## Langkah 1: Buka folder game di Zalith
+
+1. Buka aplikasi **Zalith Launcher**.
+2. Pilih instance Minecraft yang sudah ada mod X FIVE LIVE-nya.
+3. Cari pengaturan folder game (sering disebut **Game directory** atau **Folder game**).
+   Lokasinya bisa berbeda di tiap versi Zalith. Kalau tidak ketemu, cek pengaturan instance dan pengaturan umum Zalith.
+
+## Langkah 2: Buka folder xfive-music
+
+1. Buka game sekali dengan mod ini. Folder **xfive-music** akan dibuat otomatis di dalam folder game.
+2. Keluar dari game, lalu buka aplikasi **File** (atau File Manager) di HP.
+3. Masuk ke folder game dari Langkah 1, lalu buka folder **xfive-music**.
+
+Kalau folder itu belum ada, buat sendiri dengan nama persis `xfive-music` (huruf kecil semua).
+
+## Langkah 3: Salin lagu ke dalam folder
+
+1. Salin file lagu ke dalam folder **xfive-music**.
+2. Format yang didukung: **.mp3**, **.ogg**, dan **.wav**.
+3. Beri nama file dengan pola **Artis - Judul.mp3**, misalnya `Adele - Hello.mp3`.
+   Dengan pola ini, nama artis dan judul tampil di HUD.
+4. (Opsional) Lirik bisa ditaruh di file **Artis - Judul.lrc** di folder yang sama.
+
+## Langkah 4: Muat ulang lagu di dalam game
+
+1. Buka game, lalu tekan **Right Shift** untuk membuka menu X FIVE LIVE.
+2. Tekan **Muat ulang daftar lagu**. Lagu baru akan terbaca.
+3. Tekan **Putar / Jeda** untuk memutar musik.
+4. Atur **Volume** dengan slider di kolom kiri.
+5. Tekan **Lagu berikutnya** atau **Lagu sebelumnya** untuk pindah lagu.
+6. Tekan **Tutup** untuk keluar dari menu. Pengaturan akan tersimpan otomatis.
+
+## Opsional: lagu dari folder lain
+
+Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
+
+1. Buka **xfive-music**, lalu buat file teks bernama **folder-musik.txt**.
+   File ini dibuat otomatis saat game dibuka, jadi cukup dibuka dan diedit.
+2. Tulis satu path per baris. Contoh:
+   ```
+   /storage/emulated/0/Music
+   /storage/emulated/0/Download/lagu.mp3
+   ```
+3. Baris yang diawali tanda **#** diabaikan.
+4. Simpan, lalu di dalam game tekan **Muat ulang daftar lagu**.
+
+Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke folder **xfive-music**.
+
+## Kalau musik tidak berbunyi
+
+- Pastikan formatnya .mp3, .ogg, atau .wav.
+- Coba dulu dengan lagu pendek (1 sampai 3 menit). Lagu sangat panjang butuh memori besar.
+- Lihat tulisan status di menu X FIVE LIVE. Di sana tertulis alasannya, misalnya "Format tidak didukung" atau "Belum ada lagu".
+- Pastikan volume di game dan volume HP tidak nol.
+
+## Batasan saat ini
+
+- Tidak ada koneksi ke Spotify atau YouTube. Musik hanya berasal dari file di HP.
+- Tombol musik ada di menu (Right Shift), belum ada di HUD.
+- Pemutaran di Android belum diuji langsung di perangkat. Kalau tidak berbunyi, kirim status yang muncul di menu.

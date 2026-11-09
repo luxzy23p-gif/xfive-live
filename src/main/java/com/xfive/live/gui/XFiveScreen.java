@@ -11,8 +11,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-import java.util.function.BooleanConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -119,7 +119,7 @@ public final class XFiveScreen extends Screen {
         pos[1] = Math.max(0, Math.min(height - 20, pos[1] + dy));
     }
 
-    private static Button toggle(int x, int y, String name, BooleanSupplier get, BooleanConsumer set) {
+    private static Button toggle(int x, int y, String name, BooleanSupplier get, Consumer<Boolean> set) {
         return labelled(x, y, BTN_W,
                 () -> name + ": " + (get.getAsBoolean() ? "ON" : "OFF"),
                 () -> set.accept(!get.getAsBoolean()));
