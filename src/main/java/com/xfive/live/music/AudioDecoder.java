@@ -8,12 +8,14 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBVorbis;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,8 +23,10 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Mengubah file audio menjadi PCM 16-bit. Tidak memakai javax.sound, jadi bisa jalan di Android.
+ * Mengubah file audio menjadi PCM 16-bit. Format dikenali dari ISI file (bukan dari nama),
+ * jadi file yang namanya .mp3 tapi isinya OGG tetap bisa dibaca.
  * WAV dibaca manual, OGG lewat stb_vorbis (bawaan LWJGL Minecraft), MP3 lewat JLayer.
+ * BELUM DIVERIFIKASI terhadap jar Minecraft 26.2 (lihat README).
  */
 public final class AudioDecoder {
 
@@ -38,23 +42,62 @@ public final class AudioDecoder {
     }
 
     public static Pcm decode(Path file) throws IOException {
-        String n = file.getFileName().toString().toLowerCase(Locale.ROOT);
-        if (n.endsWith(".wav")) {
-            return decodeWav(Files.readAllBytes(file));
+        byte[] data = Files.readAllBytes(file);
+        if (data.length == 0) {
+            throw new IOException("File kosong (0 byte)");
         }
-        if (n.endsWith(".ogg")) {
-            return decodeOgg(Files.readAllBytes(file));
+        String format = detect(data);
+        if (format.equals("mp3")) {
+            return decodeMp3(data);
         }
-        if (n.endsWith(".mp3")) {
-            return decodeMp3(file);
+        if (format.equals("ogg")) {
+            return decodeOgg(data);
         }
-        throw new IOException("Format tidak didukung: " + n);
+        if (format.equals("wav")) {
+            return decodeWav(data);
+        }
+        if (format.equals("m4a")) {
+            throw new IOException("File ini format M4A/AAC, bukan MP3. Ubah ke MP3, OGG, atau WAV.");
+        }
+        if (format.equals("webm")) {
+            throw new IOException("File ini format WebM/Opus, bukan MP3. Ubah ke MP3, OGG, atau WAV.");
+        }
+        throw new IOException("Format tidak dikenali (" + data.length + " byte). Gunakan MP3, OGG, atau WAV.");
+    }
+
+    /** Mendeteksi format dari beberapa byte pertama file. */
+    static String detect(byte[] b) {
+        if (b.length >= 3 && b[0] == 'I' && b[1] == 'D' && b[2] == '3') {
+            return "mp3"; // MP3 dengan tag ID3 di depan
+        }
+        if (b.length >= 2 && (b[0] & 0xFF) == 0xFF) {
+            // MPEG audio: sync 11 bit, lalu layer 2 bit. Layer III (MP3) = 01.
+            if ((b[1] & 0xE0) == 0xE0 && ((b[1] >> 1) & 0x03) == 0x01) {
+                return "mp3";
+            }
+            // ADTS (AAC): sync 0xFFF dengan layer 00
+            if ((b[1] & 0xF6) == 0xF0) {
+                return "m4a";
+            }
+        }
+        if (b.length >= 12 && b[0] == 'O' && b[1] == 'g' && b[2] == 'g' && b[3] == 'S') {
+            return "ogg";
+        }
+        if (b.length >= 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+                && b[8] == 'W' && b[9] == 'A' && b[10] == 'V' && b[11] == 'E') {
+            return "wav";
+        }
+        if (b.length >= 8 && b[4] == 'f' && b[5] == 't' && b[6] == 'y' && b[7] == 'p') {
+            return "m4a"; // kontainer MP4/M4A
+        }
+        if (b.length >= 4 && (b[0] & 0xFF) == 0x1A && (b[1] & 0xFF) == 0x45
+                && (b[2] & 0xFF) == 0xDF && (b[3] & 0xFF) == 0xA3) {
+            return "webm"; // kontainer Matroska/WebM
+        }
+        return "unknown";
     }
 
     private static Pcm decodeWav(byte[] b) throws IOException {
-        if (b.length < 12 || !"RIFF".equals(ascii(b, 0)) || !"WAVE".equals(ascii(b, 8))) {
-            throw new IOException("Bukan file WAV yang valid");
-        }
         int pos = 12;
         int channels = 0;
         int sampleRate = 0;
@@ -95,7 +138,7 @@ public final class AudioDecoder {
         IntBuffer rate = BufferUtils.createIntBuffer(1);
         ShortBuffer out = STBVorbis.stb_vorbis_decode_memory(in, channels, rate);
         if (out == null) {
-            throw new IOException("OGG tidak bisa didekode");
+            throw new IOException("OGG tidak bisa didekode (mungkin bukan Vorbis)");
         }
         try {
             short[] s = new short[out.remaining()];
@@ -106,12 +149,12 @@ public final class AudioDecoder {
         }
     }
 
-    private static Pcm decodeMp3(Path file) throws IOException {
+    private static Pcm decodeMp3(byte[] data) throws IOException {
         List<short[]> chunks = new ArrayList<>();
         int channels = 0;
         int rate = 0;
         int total = 0;
-        try (InputStream in = Files.newInputStream(file)) {
+        try (InputStream in = new ByteArrayInputStream(data)) {
             Bitstream bitstream = new Bitstream(in);
             Decoder decoder = new Decoder();
             while (true) {
@@ -133,10 +176,10 @@ public final class AudioDecoder {
                 bitstream.closeFrame();
             }
         } catch (Exception e) {
-            throw new IOException("MP3 gagal didekode: " + e.getMessage(), e);
+            throw new IOException("MP3 rusak atau tidak didukung: " + e.getMessage(), e);
         }
         if (total == 0) {
-            throw new IOException("MP3 kosong atau tidak bisa dibaca");
+            throw new IOException("MP3 tidak berisi audio yang bisa dibaca");
         }
         short[] all = new short[total];
         int off = 0;
@@ -148,7 +191,7 @@ public final class AudioDecoder {
     }
 
     private static String ascii(byte[] b, int off) {
-        return new String(b, off, 4, java.nio.charset.StandardCharsets.US_ASCII);
+        return new String(b, off, 4, StandardCharsets.US_ASCII);
     }
 
     private static int le16(byte[] b, int off) {

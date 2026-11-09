@@ -42,7 +42,7 @@ public final class MusicManager {
             status = "Playlist kosong";
             return false;
         }
-        if (loadedTrack != track) {
+        if (loadedTrack == null || !loadedTrack.path().equals(track.path())) {
             if (!player.load(track.path())) {
                 status = "Gagal: " + player.lastError();
                 error = true;
@@ -61,6 +61,25 @@ public final class MusicManager {
         error = false;
         status = "Memutar";
         return true;
+    }
+
+    /** Memperbarui daftar lagu TANPA menghentikan lagu yang sedang diputar. */
+    public int refresh(java.util.List<Path> sources) {
+        PlaylistManager.Track before = playlist.current();
+        int n = playlist.scanSources(sources);
+        if (before != null) {
+            java.util.List<PlaylistManager.Track> list = playlist.tracks();
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).path().equals(before.path())) {
+                    playlist.select(i);
+                    break;
+                }
+            }
+        }
+        if (!player.isPlaying() && !error) {
+            status = n == 0 ? "Belum ada lagu. Isi folder xfive-music." : n + " lagu";
+        }
+        return n;
     }
 
     public void togglePause() {

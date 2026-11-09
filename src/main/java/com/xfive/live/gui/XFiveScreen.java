@@ -44,6 +44,7 @@ public final class XFiveScreen extends Screen {
     @Override
     protected void init() {
         XFiveConfig c = XFiveLiveClient.CONFIG;
+        XFiveLiveClient.refreshMusic();
         leftX = width / 2 - BTN_W - 4;
         rightX = width / 2 + 4;
 
@@ -61,14 +62,16 @@ public final class XFiveScreen extends Screen {
         addRenderableWidget(new OpacitySlider(leftX, row(r++), BTN_W, BTN_H));
 
         r = 0;
-        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Putar / Jeda",
-                () -> XFiveLiveClient.MUSIC.togglePause()));
+        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Putar / Jeda", () -> {
+            XFiveLiveClient.refreshMusic();
+            XFiveLiveClient.MUSIC.togglePause();
+        }));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Lagu berikutnya",
                 () -> XFiveLiveClient.MUSIC.next()));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Lagu sebelumnya",
                 () -> XFiveLiveClient.MUSIC.previous()));
-        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Muat ulang daftar lagu",
-                () -> XFiveLiveClient.reloadMusic()));
+        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Perbarui daftar lagu",
+                () -> XFiveLiveClient.refreshMusic()));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Daftar lagu",
                 () -> Minecraft.getInstance().setScreenAndShow(new SongListScreen(this))));
         addRenderableWidget(labelled(rightX, row(r++), BTN_W,

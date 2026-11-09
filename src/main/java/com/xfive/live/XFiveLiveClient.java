@@ -97,8 +97,8 @@ public final class XFiveLiveClient implements ClientModInitializer {
     }
 
     /**
-     * Memuat ulang daftar lagu dari folder default (xfive-music) dan folder-musik.txt.
-     * Dipanggil saat startup dan dari tombol di menu pengaturan.
+     * Memuat daftar lagu dari folder default (xfive-music) dan folder-musik.txt saat startup.
+     * Menu pengaturan memakai refreshMusic() agar daftar diperbarui tanpa menghentikan musik.
      */
     public static int reloadMusic() {
         // Folder default dibuat otomatis agar bisa langsung diisi lagu.
@@ -142,6 +142,23 @@ public final class XFiveLiveClient implements ClientModInitializer {
             // daftar tidak bisa dibaca, pakai folder default saja
         }
         return out;
+    }
+
+    /**
+     * Memperbarui daftar lagu tanpa perlu restart dan tanpa menghentikan musik.
+     * Dipanggil otomatis saat menu dibuka.
+     */
+    public static int refreshMusic() {
+        Path folder = CONFIG.musicFolder.isBlank()
+                ? FabricLoader.getInstance().getGameDir().resolve("xfive-music")
+                : Path.of(CONFIG.musicFolder.strip());
+        try {
+            Files.createDirectories(folder);
+        } catch (IOException ignored) {
+            // folder tidak bisa dibuat, daftar tetap dibaca dari folder lain
+        }
+        musicFolder = folder;
+        return MUSIC.refresh(musicSources(folder));
     }
 
     private static KeyMapping register(String name, int key, KeyMapping.Category category) {

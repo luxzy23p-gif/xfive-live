@@ -30,15 +30,15 @@ Kalau folder itu belum ada, buat sendiri dengan nama persis `xfive-music` (huruf
 1. Unduh lagu dalam bentuk ZIP seperti biasa.
 2. Buka aplikasi **File**, lalu ekstrak (unzip) file ZIP tersebut. Hasilnya berupa file .mp3, .ogg, atau .wav.
 3. Salin file-file lagu itu ke folder **xfive-music** (lihat Langkah 2).
-4. Buka game, tekan **Right Shift**, lalu tekan **Muat ulang daftar lagu**.
+4. Buka game, lalu tekan **Right Shift**. Daftar lagu diperbarui otomatis setiap menu dibuka, jadi **tidak perlu restart atau muat ulang Minecraft**.
 5. Di menu, perhatikan baris **Folder lagu** dan **Jumlah lagu**. Baris itu menampilkan lokasi folder yang sedang dipakai dan berapa lagu yang terbaca.
 
 Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manual ke folder yang ditampilkan di menu.
 
-## Langkah 4: Muat ulang lagu di dalam game
+## Langkah 4: Putar lagu di dalam game
 
 1. Buka game, lalu tekan **Right Shift** untuk membuka menu X FIVE LIVE.
-2. Tekan **Muat ulang daftar lagu**. Lagu baru akan terbaca.
+2. Lagu baru otomatis terbaca. Tidak perlu restart atau muat ulang Minecraft.
 3. Tekan **Putar / Jeda** untuk memutar musik.
 4. Atur **Volume** dengan slider di kolom kiri.
 5. Tekan **Lagu berikutnya** atau **Lagu sebelumnya** untuk pindah lagu.
@@ -56,13 +56,14 @@ Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
    /storage/emulated/0/Download/lagu.mp3
    ```
 3. Baris yang diawali tanda **#** diabaikan.
-4. Simpan, lalu di dalam game tekan **Muat ulang daftar lagu**.
+4. Simpan, lalu buka game dan tekan **Right Shift**. Lagu dari folder tambahan akan terbaca.
 
 Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke folder **xfive-music**.
 
 ## Kalau musik tidak berbunyi
 
-- Pastikan formatnya .mp3, .ogg, atau .wav.
+- Pastikan formatnya benar-benar MP3, OGG, atau WAV. Mengganti nama file dari .m4a atau .webm menjadi .mp3 tidak membuat file itu jadi MP3. Kalau status menulis "M4A" atau "WebM", ubah file itu dengan aplikasi konverter ke MP3 atau OGG.
+- Kalau status menulis "tidak berisi audio", file-nya kemungkinan rusak atau tidak lengkap. Coba salin ulang dari sumbernya.
 - Coba dulu dengan lagu pendek (1 sampai 3 menit). Lagu sangat panjang butuh memori besar.
 - Lihat tulisan status di menu X FIVE LIVE. Di sana tertulis alasannya, misalnya "Format tidak didukung" atau "Belum ada lagu".
 - Baris **Status** di menu (Right Shift) menampilkan kondisi terakhir. Jika tertulis "Gagal", pesan setelahnya menjelaskan penyebabnya.

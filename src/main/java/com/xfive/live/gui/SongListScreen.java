@@ -32,6 +32,7 @@ public final class SongListScreen extends Screen {
 
     @Override
     protected void init() {
+        XFiveLiveClient.refreshMusic();
         List<PlaylistManager.Track> tracks = XFiveLiveClient.MUSIC.playlist().tracks();
         page = Math.max(0, Math.min(page, pageCount(tracks.size()) - 1));
 
@@ -65,7 +66,7 @@ public final class SongListScreen extends Screen {
         int x = width / 2 - BTN_W / 2;
         if (total == 0) {
             GlassPanelRenderer.text(g, font, "Belum ada lagu di folder musik.", x, 30, GlassPanelRenderer.MUTED);
-            GlassPanelRenderer.text(g, font, "Masukkan file .mp3/.ogg/.wav, lalu Muat ulang.", x, 40,
+            GlassPanelRenderer.text(g, font, "Masukkan file .mp3/.ogg/.wav, lalu buka menu lagi.", x, 40,
                     GlassPanelRenderer.MUTED);
         } else {
             GlassPanelRenderer.text(g, font,

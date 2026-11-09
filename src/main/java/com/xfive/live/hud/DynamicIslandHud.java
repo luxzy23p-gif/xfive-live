@@ -39,7 +39,7 @@ public final class DynamicIslandHud {
     public static void onTick() {
         boolean playing = XFiveLiveClient.MUSIC.isPlaying();
         PlaylistManager.Track track = XFiveLiveClient.MUSIC.currentTrack();
-        if (playing && (!wasPlaying || track != lastTrack)) {
+        if (playing && (!wasPlaying || !sameTrack(track, lastTrack))) {
             expandUntil = System.currentTimeMillis() + EXPAND_MS;
         }
         wasPlaying = playing;
@@ -104,6 +104,14 @@ public final class DynamicIslandHud {
                 g.fill(x1, y + i, x2, y + i + 1, argb);
             }
         }
+    }
+
+    /** Membandingkan lagu lewat path, supaya refresh daftar tidak dianggap lagu baru. */
+    private static boolean sameTrack(PlaylistManager.Track a, PlaylistManager.Track b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return a.path().equals(b.path());
     }
 
     private static float approach(float current, float target, float step) {
