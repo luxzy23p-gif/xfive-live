@@ -25,6 +25,15 @@ public final class MusicManager {
         return folder;
     }
 
+    /** Memakai daftar sumber campuran (folder dan file). Dipanggil saat startup. */
+    public int setSources(java.util.List<Path> sources) {
+        player.stop();
+        loadedTrack = null;
+        int n = playlist.scanSources(sources);
+        status = n == 0 ? "Belum ada lagu. Isi folder xfive-music." : n + " lagu";
+        return n;
+    }
+
     /** Memuat dan memutar lagu aktif. Mengembalikan false jika gagal (lihat status()). */
     public boolean playCurrent() {
         PlaylistManager.Track track = playlist.current();

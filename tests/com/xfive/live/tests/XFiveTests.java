@@ -131,6 +131,21 @@ public final class XFiveTests {
         check("next wrap 2->0", pm.next() != null && pm.currentIndex() == 0);
         check("previous wrap 0->2", pm.previous() != null && pm.currentIndex() == 2);
         check("folder tidak ada = 0 lagu", new PlaylistManager().scan(dir.resolve("nope")) == 0);
+        testScanSources(dir.resolveSibling("sources"));
+    }
+
+    static void testScanSources(Path base) throws Exception {
+        Path folder = base.resolve("src-folder");
+        Path other = base.resolve("other");
+        Files.createDirectories(folder);
+        Files.createDirectories(other);
+        Files.writeString(folder.resolve("Artist - Track1.mp3"), "x");
+        Files.writeString(other.resolve("Solo.wav"), "x");
+        PlaylistManager pm = new PlaylistManager();
+        int n = pm.scanSources(List.of(folder, other.resolve("Solo.wav"), base.resolve("tidak-ada"), folder));
+        check("scanSources gabung folder + file tanpa duplikat (2 lagu)", n == 2);
+        check("scanSources membaca artis dari folder", pm.tracks().get(0).artist().equals("Artist"));
+        check("scanSources melewati sumber yang tidak ada", pm.size() == 2);
     }
 
     static void testConfig(Path dir) throws Exception {

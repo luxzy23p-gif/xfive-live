@@ -21,8 +21,11 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entrypoint client X FIVE LIVE.
@@ -78,11 +81,49 @@ public final class XFiveLiveClient implements ClientModInitializer {
         } catch (IOException ignored) {
             // folder tidak bisa dibuat, status akan menampilkan folder kosong
         }
-        MUSIC.setFolder(folder);
+        MUSIC.setSources(musicSources(folder));
         MUSIC.setVolume(CONFIG.defaultVolume);
         CHAT.setMaxMessages(CONFIG.maxMessages);
         CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
         CHAT.setIntervalMs(CONFIG.messageSpeedMs);
+    }
+
+    static final String SOURCE_FILE = "folder-musik.txt";
+    private static final String SOURCE_TEMPLATE = String.join("\n",
+            "# Tambahkan folder atau file lagu pribadi, satu per baris.",
+            "# Contoh folder: /storage/emulated/0/Music",
+            "# Contoh file:   /storage/emulated/0/Download/lagu.mp3",
+            "# Baris yang diawali tanda # diabaikan.",
+            "");
+
+    /**
+     * Sumber musik: folder default (xfive-music) ditambah setiap baris di folder-musik.txt.
+     * File daftar dibuat otomatis berisi petunjuk jika belum ada.
+     */
+    static List<Path> musicSources(Path defaultDir) {
+        List<Path> out = new ArrayList<>();
+        out.add(defaultDir);
+        Path list = defaultDir.resolve(SOURCE_FILE);
+        try {
+            if (!Files.exists(list)) {
+                Files.writeString(list, SOURCE_TEMPLATE, StandardCharsets.UTF_8);
+                return out;
+            }
+            for (String line : Files.readAllLines(list, StandardCharsets.UTF_8)) {
+                String s = line.strip();
+                if (s.isEmpty() || s.startsWith("#")) {
+                    continue;
+                }
+                try {
+                    out.add(Path.of(s));
+                } catch (RuntimeException badPath) {
+                    // path tidak valid, lewati baris ini
+                }
+            }
+        } catch (IOException | RuntimeException ignored) {
+            // daftar tidak bisa dibaca, pakai folder default saja
+        }
+        return out;
     }
 
     private static KeyMapping register(String name, int key, KeyMapping.Category category) {

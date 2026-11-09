@@ -62,6 +62,42 @@ public final class PlaylistManager {
         return new Track(file, base.strip(), "Unknown Artist");
     }
 
+    /**
+     * Memindai beberapa sumber sekaligus. Setiap sumber bisa berupa folder (semua lagu di dalamnya)
+     * atau satu file lagu. Sumber yang tidak ada atau tidak bisa dibaca dilewati tanpa error.
+     */
+    public synchronized int scanSources(List<Path> sources) {
+        tracks.clear();
+        index = -1;
+        java.util.Set<Path> seen = new java.util.LinkedHashSet<>();
+        for (Path src : sources) {
+            if (src == null) {
+                continue;
+            }
+            try {
+                if (Files.isDirectory(src)) {
+                    try (Stream<Path> stream = Files.list(src)) {
+                        stream.filter(Files::isRegularFile)
+                                .filter(PlaylistManager::isSupported)
+                                .sorted()
+                                .forEach(seen::add);
+                    }
+                } else if (Files.isRegularFile(src) && isSupported(src)) {
+                    seen.add(src.toAbsolutePath());
+                }
+            } catch (IOException | RuntimeException e) {
+                // sumber tidak bisa dibaca, lewati
+            }
+        }
+        for (Path p : seen) {
+            tracks.add(parse(p));
+        }
+        if (!tracks.isEmpty()) {
+            index = 0;
+        }
+        return tracks.size();
+    }
+
     public synchronized int size() {
         return tracks.size();
     }

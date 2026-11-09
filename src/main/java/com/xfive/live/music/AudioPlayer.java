@@ -1,6 +1,7 @@
 package com.xfive.live.music;
 
 import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.AL11;
 import org.lwjgl.openal.ALC10;
 
 import java.io.IOException;
@@ -96,7 +97,7 @@ public final class AudioPlayer {
             return;
         }
         AL10.alSourceStop(source);
-        AL10.alSourcef(source, AL10.AL_SEC_OFFSET, 0f);
+        AL10.alSourcef(source, AL11.AL_SEC_OFFSET, 0f);
         wantPlaying = false;
     }
 
@@ -105,7 +106,7 @@ public final class AudioPlayer {
             return;
         }
         long target = Math.max(0L, Math.min(durationMs, ms));
-        AL10.alSourcef(source, AL10.AL_SEC_OFFSET, target / 1000f);
+        AL10.alSourcef(source, AL11.AL_SEC_OFFSET, target / 1000f);
     }
 
     public boolean isPlaying() {
@@ -121,7 +122,7 @@ public final class AudioPlayer {
         if (!loaded) {
             return 0L;
         }
-        return (long) (AL10.alGetSourcef(source, AL10.AL_SEC_OFFSET) * 1000f);
+        return (long) (AL10.alGetSourcef(source, AL11.AL_SEC_OFFSET) * 1000f);
     }
 
     public long durationMs() {
