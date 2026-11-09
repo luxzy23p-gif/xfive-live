@@ -51,6 +51,7 @@ public final class XFiveScreen extends Screen {
         addRenderableWidget(toggle(leftX, row(r++), "Musik", () -> c.enableMusic, v -> c.enableMusic = v));
         addRenderableWidget(toggle(leftX, row(r++), "Lirik", () -> c.enableLyrics, v -> c.enableLyrics = v));
         addRenderableWidget(toggle(leftX, row(r++), "Chat", () -> c.enableChat, v -> c.enableChat = v));
+        addRenderableWidget(toggle(leftX, row(r++), "Dynamic Island", () -> c.dynamicIsland, v -> c.dynamicIsland = v));
         addRenderableWidget(labelled(leftX, row(r++), BTN_W,
                 () -> "Tema: " + ("cyan".equals(c.theme) ? "Cyan" : "Ungu"),
                 () -> c.theme = "cyan".equals(c.theme) ? "purple" : "cyan"));

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
 import com.xfive.live.gui.XFiveScreen;
+import com.xfive.live.hud.DynamicIslandHud;
 import com.xfive.live.hud.LiveChatHud;
 import com.xfive.live.hud.LyricsHud;
 import com.xfive.live.hud.MusicHud;
@@ -78,7 +79,11 @@ public final class XFiveLiveClient implements ClientModInitializer {
                     if (!CONFIG.enableMod || !CONFIG.showHud) {
                         return;
                     }
-                    MusicHud.render(graphics);
+                    if (CONFIG.dynamicIsland) {
+                        DynamicIslandHud.render(graphics);
+                    } else {
+                        MusicHud.render(graphics);
+                    }
                     LyricsHud.render(graphics);
                     LiveChatHud.render(graphics);
                 });
@@ -157,6 +162,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
         }
 
         CHAT.update(System.currentTimeMillis());
+        DynamicIslandHud.onTick();
 
         if (CONFIG.enableMusic) {
             if (CONFIG.autoResume && !autoResumeDone) {

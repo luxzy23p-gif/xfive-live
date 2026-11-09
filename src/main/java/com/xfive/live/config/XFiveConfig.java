@@ -18,6 +18,7 @@ public final class XFiveConfig {
     public boolean showHud = true;
     public float hudScale = 1.0f;
     public float hudOpacity = 0.85f;
+    public boolean dynamicIsland = true;
 
     // Music
     public boolean enableMusic = true;
@@ -78,6 +79,7 @@ public final class XFiveConfig {
         showHud = bool(p, "general.showHud", showHud);
         hudScale = flt(p, "general.hudScale", hudScale, 0.5f, 2.0f);
         hudOpacity = flt(p, "general.hudOpacity", hudOpacity, 0.1f, 1.0f);
+        dynamicIsland = bool(p, "general.dynamicIsland", dynamicIsland);
 
         enableMusic = bool(p, "music.enable", enableMusic);
         defaultVolume = flt(p, "music.defaultVolume", defaultVolume, 0f, 1f);
@@ -114,6 +116,7 @@ public final class XFiveConfig {
         put(p, "general.showHud", showHud);
         put(p, "general.hudScale", hudScale);
         put(p, "general.hudOpacity", hudOpacity);
+        put(p, "general.dynamicIsland", dynamicIsland);
 
         put(p, "music.enable", enableMusic);
         put(p, "music.defaultVolume", defaultVolume);
