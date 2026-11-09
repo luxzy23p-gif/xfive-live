@@ -103,6 +103,10 @@ public final class XFiveScreen extends Screen {
                 GlassPanelRenderer.MUTED);
         GlassPanelRenderer.text(g, font, "Status: " + GlassPanelRenderer.trim(XFiveLiveClient.MUSIC.status(), 50),
                 leftX, height - 38, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "Lirik: " + (XFiveLiveClient.LYRICS.isEmpty()
+                ? "tidak ditemukan untuk lagu ini"
+                : XFiveLiveClient.LYRICS.lines().size() + " baris"),
+                leftX, height - 86, GlassPanelRenderer.MUTED);
         Path folder = XFiveLiveClient.musicFolder;
         String folderText = folder == null ? "-" : tail(folder.toString(), 46);
         GlassPanelRenderer.text(g, font, "Folder lagu: " + folderText, leftX, height - 74,

@@ -63,6 +63,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
     public void onInitializeClient() {
         CONFIG.load();
         reloadMusic();
+        ensureLyricsFolder();
         MUSIC.setVolume(CONFIG.defaultVolume);
         CHAT.setMaxMessages(CONFIG.maxMessages);
         CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
@@ -190,8 +191,60 @@ public final class XFiveLiveClient implements ClientModInitializer {
         if (track == null) {
             LYRICS.clear();
         } else {
-            LYRICS.loadFile(lrcFor(track.path()));
+            LYRICS.loadFile(findLrc(track));
         }
+    }
+
+    /** Folder lirik buatan sendiri: taruh file .lrc di sini dengan nama sama seperti lagu. */
+    static final String LYRICS_FOLDER = "xfive-lirik";
+    private static final String LYRICS_README = String.join("\n",
+            "Taruh file lirik .lrc di folder ini.",
+            "Nama file harus sama dengan nama lagu, contoh:",
+            "  lagu  : Adele - Hello.mp3",
+            "  lirik : Adele - Hello.lrc",
+            "Lirik yang diletakkan di samping file lagu juga dibaca.",
+            "");
+
+    /** Membuat folder lirik dan petunjuknya jika belum ada. */
+    static void ensureLyricsFolder() {
+        try {
+            Path dir = FabricLoader.getInstance().getGameDir().resolve(LYRICS_FOLDER);
+            Files.createDirectories(dir);
+            Path readme = dir.resolve("BACA-DULU.txt");
+            if (!Files.exists(readme)) {
+                Files.writeString(readme, LYRICS_README, StandardCharsets.UTF_8);
+            }
+        } catch (IOException | RuntimeException ignored) {
+            // folder lirik tidak bisa dibuat, lirik dari samping lagu tetap bisa dipakai
+        }
+    }
+
+    /** Mencari .lrc: di samping file lagu dulu, lalu di folder xfive-lirik. Null jika tidak ada. */
+    static Path findLrc(PlaylistManager.Track track) {
+        Path beside = lrcFor(track.path());
+        if (Files.isRegularFile(beside)) {
+            return beside;
+        }
+        Path dir = FabricLoader.getInstance().getGameDir().resolve(LYRICS_FOLDER);
+        String stem = stemOf(track.path());
+        String byArtist = track.artist() + " - " + track.title();
+        for (String name : new String[] {stem, byArtist}) {
+            try {
+                Path candidate = dir.resolve(name + ".lrc");
+                if (Files.isRegularFile(candidate)) {
+                    return candidate;
+                }
+            } catch (RuntimeException invalidName) {
+                // nama tidak valid sebagai path, coba berikutnya
+            }
+        }
+        return null;
+    }
+
+    private static String stemOf(Path audio) {
+        String n = audio.getFileName().toString();
+        int dot = n.lastIndexOf('.');
+        return dot > 0 ? n.substring(0, dot) : n;
     }
 
     static Path lrcFor(Path audio) {
