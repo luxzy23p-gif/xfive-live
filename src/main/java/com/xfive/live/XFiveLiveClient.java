@@ -20,6 +20,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -67,9 +69,16 @@ public final class XFiveLiveClient implements ClientModInitializer {
     }
 
     private static void applyConfigToManagers() {
-        if (!CONFIG.musicFolder.isBlank()) {
-            MUSIC.setFolder(Path.of(CONFIG.musicFolder.strip()));
+        // Folder default: <folder game>/xfive-music. Dibuat otomatis agar bisa langsung diisi lagu.
+        Path folder = CONFIG.musicFolder.isBlank()
+                ? FabricLoader.getInstance().getGameDir().resolve("xfive-music")
+                : Path.of(CONFIG.musicFolder.strip());
+        try {
+            Files.createDirectories(folder);
+        } catch (IOException ignored) {
+            // folder tidak bisa dibuat, status akan menampilkan folder kosong
         }
+        MUSIC.setFolder(folder);
         MUSIC.setVolume(CONFIG.defaultVolume);
         CHAT.setMaxMessages(CONFIG.maxMessages);
         CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);

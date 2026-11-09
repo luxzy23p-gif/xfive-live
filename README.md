@@ -47,7 +47,8 @@ Jika build gagal, error pertama kemungkinan berasal dari nama API Minecraft yang
 
 File: `config/xfive-live.properties` (dibuat otomatis saat pertama kali disimpan).
 
-- `music.folder`: path folder berisi file `.wav`. Hanya WAV yang bisa diputar di build ini.
+- Folder musik default: `xfive-music` di dalam folder game. Taruh file `.mp3`, `.ogg`, atau `.wav` di sana. Folder ini dibuat otomatis saat game dibuka.
+- `music.folder`: bisa diganti ke folder lain lewat file config (belum ada menu di dalam game).
 - `lyrics`: file `.lrc` dengan nama sama seperti lagu (`Artis - Judul.wav` dan `Artis - Judul.lrc`) dibaca otomatis saat lagu berganti.
 - `chat.*`, `appearance.*`, `general.*`, `hud.*`: lihat `XFiveConfig.java`.
 

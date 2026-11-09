@@ -1,24 +1,26 @@
 package com.xfive.live.music;
 
-import java.io.File;
+import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.ALC10;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
-import java.util.Locale;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl;
 
 /**
- * Pemutar audio berbasis javax.sound.sampled.Clip. Clip memutar di thread miliknya sendiri,
- * jadi tidak memblokir render thread Minecraft.
+ * Pemutar audio memakai OpenAL, sistem suara yang sama dengan yang dipakai Minecraft.
+ * Ini yang membuat musik bisa berbunyi di Android (Zalith), tempat javax.sound tidak tersedia.
  *
- * Batasan: javax.sound hanya tersedia di JVM desktop. Di Android (Zalith) API ini tidak
- * tersedia, dan MP3/OGG butuh decoder tambahan. Build ini hanya memutar WAV.
+ * Harus dipanggil dari thread game, karena konteks OpenAL Minecraft aktif di thread itu.
+ * Seluruh lagu dimuat ke memori sebagai satu buffer. Lagu sangat panjang butuh memori besar.
  */
 public final class AudioPlayer {
-    private Clip clip;
+    private int source = 0;
+    private int buffer = 0;
     private float volume = 0.8f;
-    private long pausedAtMicros = 0L;
+    private long durationMs = 0L;
+    private boolean loaded = false;
     private boolean wantPlaying = false;
     private String lastError = null;
 
@@ -29,92 +31,108 @@ public final class AudioPlayer {
             lastError = "Tidak ada file";
             return false;
         }
-        String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
-        if (!name.endsWith(".wav")) {
-            lastError = "Format belum didukung di build ini (hanya WAV): " + name;
+        String name = file.getFileName().toString();
+        if (!AudioDecoder.supports(name)) {
+            lastError = "Format tidak didukung: " + name;
             return false;
         }
-        try (AudioInputStream stream = AudioSystem.getAudioInputStream(file.toFile())) {
-            clip = AudioSystem.getClip();
-            clip.open(stream); // Clip memuat seluruh data ke memori, stream aman ditutup setelahnya
-            pausedAtMicros = 0L;
-            applyVolume();
+        if (ALC10.alcGetCurrentContext() == 0L) {
+            lastError = "Sistem suara belum siap";
+            return false;
+        }
+        try {
+            AudioDecoder.Pcm pcm = AudioDecoder.decode(file);
+            if (pcm.samples().length == 0 || pcm.channels() < 1 || pcm.sampleRate() < 1) {
+                lastError = "File kosong atau tidak bisa dibaca";
+                return false;
+            }
+            ensureSource();
+
+            buffer = AL10.alGenBuffers();
+            checkError("alGenBuffers");
+            ByteBuffer data = ByteBuffer.allocateDirect(pcm.samples().length * 2)
+                    .order(ByteOrder.nativeOrder());
+            data.asShortBuffer().put(pcm.samples());
+            int format = pcm.channels() == 1 ? AL10.AL_FORMAT_MONO16 : AL10.AL_FORMAT_STEREO16;
+            AL10.alBufferData(buffer, format, data, pcm.sampleRate());
+            checkError("alBufferData");
+
+            AL10.alSourcei(source, AL10.AL_BUFFER, buffer);
+            checkError("alSourcei");
+            AL10.alSourcef(source, AL10.AL_GAIN, volume);
+
+            durationMs = pcm.samples().length * 1000L / ((long) pcm.channels() * pcm.sampleRate());
+            loaded = true;
             return true;
-        } catch (Exception e) {
-            lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
+        } catch (IOException | RuntimeException e) {
+            lastError = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             close();
             return false;
         }
     }
 
     public boolean isLoaded() {
-        return clip != null;
+        return loaded;
     }
 
     public void play() {
-        if (clip == null) {
+        if (!loaded) {
             return;
         }
-        clip.setMicrosecondPosition(pausedAtMicros);
-        clip.start();
+        AL10.alSourcePlay(source);
         wantPlaying = true;
     }
 
     public void pause() {
-        if (clip == null) {
+        if (!loaded) {
             return;
         }
-        if (clip.isRunning()) {
-            pausedAtMicros = clip.getMicrosecondPosition();
-        }
-        clip.stop();
+        AL10.alSourcePause(source);
         wantPlaying = false;
     }
 
     public void stop() {
-        if (clip == null) {
+        if (!loaded) {
             return;
         }
-        clip.stop();
-        pausedAtMicros = 0L;
-        clip.setMicrosecondPosition(0L);
+        AL10.alSourceStop(source);
+        AL10.alSourcef(source, AL10.AL_SEC_OFFSET, 0f);
         wantPlaying = false;
     }
 
     public void seekMs(long ms) {
-        if (clip == null) {
+        if (!loaded) {
             return;
         }
-        long length = clip.getMicrosecondLength();
-        long target = Math.max(0L, Math.min(length, ms * 1000L));
-        pausedAtMicros = target;
-        clip.setMicrosecondPosition(target);
+        long target = Math.max(0L, Math.min(durationMs, ms));
+        AL10.alSourcef(source, AL10.AL_SEC_OFFSET, target / 1000f);
     }
 
     public boolean isPlaying() {
-        return clip != null && clip.isRunning();
+        return loaded && state() == AL10.AL_PLAYING;
     }
 
-    /** True ketika lagu seharusnya berputar tetapi Clip sudah berhenti sendiri (lagu habis). */
+    /** True ketika lagu seharusnya berputar tapi sudah berhenti sendiri (lagu habis). */
     public boolean isFinished() {
-        return wantPlaying && clip != null && !clip.isRunning();
+        return wantPlaying && loaded && state() == AL10.AL_STOPPED;
     }
 
     public long positionMs() {
-        if (clip == null) {
+        if (!loaded) {
             return 0L;
         }
-        long micros = clip.isRunning() ? clip.getMicrosecondPosition() : pausedAtMicros;
-        return micros / 1000L;
+        return (long) (AL10.alGetSourcef(source, AL10.AL_SEC_OFFSET) * 1000f);
     }
 
     public long durationMs() {
-        return clip == null ? 0L : clip.getMicrosecondLength() / 1000L;
+        return durationMs;
     }
 
     public void setVolume(float value) {
         volume = Math.max(0f, Math.min(1f, value));
-        applyVolume();
+        if (source != 0) {
+            AL10.alSourcef(source, AL10.AL_GAIN, volume);
+        }
     }
 
     public float volume() {
@@ -126,21 +144,35 @@ public final class AudioPlayer {
     }
 
     public void close() {
-        if (clip != null) {
-            clip.stop();
-            clip.close();
-            clip = null;
+        if (source != 0) {
+            AL10.alSourceStop(source);
+            AL10.alSourcei(source, AL10.AL_BUFFER, 0);
         }
+        if (buffer != 0) {
+            AL10.alDeleteBuffers(buffer);
+            buffer = 0;
+        }
+        loaded = false;
         wantPlaying = false;
-        pausedAtMicros = 0L;
+        durationMs = 0L;
     }
 
-    private void applyVolume() {
-        if (clip == null || !clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-            return;
+    private void ensureSource() {
+        if (source == 0) {
+            source = AL10.alGenSources();
+            checkError("alGenSources");
+            AL10.alSourcef(source, AL10.AL_GAIN, volume);
         }
-        FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-        float db = volume <= 0f ? gain.getMinimum() : (float) (20.0 * Math.log10(volume));
-        gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), db)));
+    }
+
+    private int state() {
+        return AL10.alGetSourcei(source, AL10.AL_SOURCE_STATE);
+    }
+
+    private static void checkError(String where) {
+        int err = AL10.alGetError();
+        if (err != AL10.AL_NO_ERROR) {
+            throw new IllegalStateException("OpenAL error " + err + " di " + where);
+        }
     }
 }
