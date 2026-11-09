@@ -65,7 +65,11 @@ Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke fol
 - Pastikan formatnya .mp3, .ogg, atau .wav.
 - Coba dulu dengan lagu pendek (1 sampai 3 menit). Lagu sangat panjang butuh memori besar.
 - Lihat tulisan status di menu X FIVE LIVE. Di sana tertulis alasannya, misalnya "Format tidak didukung" atau "Belum ada lagu".
-- Pastikan volume di game dan volume HP tidak nol.
+- Baris **Status** di menu (Right Shift) menampilkan kondisi terakhir. Jika tertulis "Gagal", pesan setelahnya menjelaskan penyebabnya.
+- Cek volume di tiga tempat:
+  1. Volume HP (tombol volume samping, dan pastikan tidak dalam mode senyap).
+  2. Di Minecraft, buka **Options → Music & Sounds** dan pastikan **Master Volume** tidak nol.
+  3. Slider **Volume** di menu X FIVE LIVE.
 
 ## Batasan saat ini
 

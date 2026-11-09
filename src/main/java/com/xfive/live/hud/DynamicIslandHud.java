@@ -48,8 +48,9 @@ public final class DynamicIslandHud {
 
     public static void render(GuiGraphicsExtractor g) {
         float dt = advanceTime();
-        boolean show = XFiveLiveClient.CONFIG.enableMusic && wasPlaying;
-        boolean wide = System.currentTimeMillis() < expandUntil;
+        boolean failed = XFiveLiveClient.MUSIC.hasError();
+        boolean show = XFiveLiveClient.CONFIG.enableMusic && (wasPlaying || failed);
+        boolean wide = failed || System.currentTimeMillis() < expandUntil;
         visible = approach(visible, show ? 1f : 0f, dt * SPEED);
         expand = approach(expand, wide ? 1f : 0f, dt * SPEED);
         if (visible <= 0.01f) {
@@ -68,8 +69,8 @@ public final class DynamicIslandHud {
 
         Font font = GlassPanelRenderer.font();
         PlaylistManager.Track t = XFiveLiveClient.MUSIC.currentTrack();
-        String title = t == null ? "Memutar" : t.title();
-        String artist = t == null ? "" : t.artist();
+        String title = failed ? "Gagal memutar" : (t == null ? "Memutar" : t.title());
+        String artist = failed ? XFiveLiveClient.MUSIC.status() : (t == null ? "" : t.artist());
 
         if (expand < 0.5f) {
             String s = GlassPanelRenderer.trim(title, 18);

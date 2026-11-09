@@ -140,6 +140,17 @@ public final class AudioPlayer {
         return volume;
     }
 
+    /** Keadaan internal OpenAL untuk diagnosis, misalnya "state=4116 (stopped)". */
+    public String debugState() {
+        if (!loaded) {
+            return "belum dimuat";
+        }
+        int s = state();
+        String name = s == AL10.AL_PLAYING ? "playing" : s == AL10.AL_PAUSED ? "paused"
+                : s == AL10.AL_STOPPED ? "stopped" : s == AL10.AL_INITIAL ? "initial" : "?";
+        return "state=" + name + ", durasi=" + (durationMs / 1000) + " detik";
+    }
+
     public String lastError() {
         return lastError;
     }

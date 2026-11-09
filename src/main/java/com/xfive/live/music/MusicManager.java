@@ -11,6 +11,7 @@ public final class MusicManager {
     private Path folder;
     private String status = "Belum ada musik";
     private PlaylistManager.Track loadedTrack;
+    private boolean error = false;
 
     public int setFolder(Path dir) {
         player.stop();
@@ -43,7 +44,8 @@ public final class MusicManager {
         }
         if (loadedTrack != track) {
             if (!player.load(track.path())) {
-                status = player.lastError();
+                status = "Gagal: " + player.lastError();
+                error = true;
                 loadedTrack = null;
                 return false;
             }
@@ -51,6 +53,12 @@ public final class MusicManager {
         }
         player.setVolume(player.volume());
         player.play();
+        if (!player.isPlaying()) {
+            status = "Gagal mulai: " + player.debugState();
+            error = true;
+            return false;
+        }
+        error = false;
         status = "Memutar";
         return true;
     }
@@ -110,6 +118,11 @@ public final class MusicManager {
 
     public boolean isPlaying() {
         return player.isPlaying();
+    }
+
+    /** True jika pemutaran terakhir gagal. Dipakai pop-up untuk menampilkan pesan error. */
+    public boolean hasError() {
+        return error;
     }
 
     public String status() {

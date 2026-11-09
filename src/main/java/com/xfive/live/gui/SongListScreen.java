@@ -71,6 +71,8 @@ public final class SongListScreen extends Screen {
             GlassPanelRenderer.text(g, font,
                     "Halaman " + (page + 1) + " dari " + pageCount(total) + " (" + total + " lagu)",
                     x, 30, GlassPanelRenderer.MUTED);
+            GlassPanelRenderer.text(g, font, "Status: " + GlassPanelRenderer.trim(XFiveLiveClient.MUSIC.status(), 50),
+                    x, 40, GlassPanelRenderer.MUTED);
         }
     }
 
