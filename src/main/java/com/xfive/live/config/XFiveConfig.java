@@ -46,7 +46,10 @@ public final class XFiveConfig {
     public float customTransparency = 0.85f;
     public boolean animations = true;
 
-    /** Posisi HUD per komponen: musicHud, lyricsHud, chatHud. Nilai = {x, y}. */
+    /**
+     * Posisi HUD per komponen: musicHud, dynamicIsland, lyricsHud, chatHud. Nilai = {x, y}.
+     * Nilai -1 berarti posisi default (dynamicIsland di tengah atas, lyricsHud mengikuti preset).
+     */
     public final Map<String, int[]> hudPositions = new HashMap<>();
 
     private final Path file;
@@ -64,6 +67,8 @@ public final class XFiveConfig {
         hudPositions.clear();
         hudPositions.put("musicHud", new int[] {8, 8});
         hudPositions.put("chatHud", new int[] {8, 120});
+        hudPositions.put("dynamicIsland", new int[] {-1, -1});
+        hudPositions.put("lyricsHud", new int[] {-1, -1});
     }
 
     public void load() {

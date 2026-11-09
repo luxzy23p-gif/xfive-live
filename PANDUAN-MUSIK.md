@@ -60,6 +60,16 @@ Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
 
 Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke folder **xfive-music**.
 
+## Menggeser HUD
+
+1. Tekan **Right Shift** untuk membuka menu X FIVE LIVE.
+2. Tahan klik kiri (atau jari di layar) pada kotak HUD yang ingin dipindah, lalu geser.
+3. Lepas untuk menaruhnya. Posisi tersimpan otomatis.
+4. Kotak yang disorot lebih terang saat kursor berada di atasnya. Yang bisa digeser: Musik atau Dynamic Island, Lirik, dan Chat.
+5. Tombol **Reset posisi HUD** mengembalikan semua HUD ke posisi awal.
+
+Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawah. Memilih posisi ini juga menghapus posisi lirik yang digeser manual.
+
 ## Kalau musik tidak berbunyi
 
 - Pastikan formatnya benar-benar MP3, OGG, atau WAV. Mengganti nama file dari .m4a atau .webm menjadi .mp3 tidak membuat file itu jadi MP3. Kalau status menulis "M4A" atau "WebM", ubah file itu dengan aplikasi konverter ke MP3 atau OGG.

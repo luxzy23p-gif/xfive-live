@@ -2,6 +2,10 @@ package com.xfive.live.gui;
 
 import com.xfive.live.XFiveLiveClient;
 import com.xfive.live.config.XFiveConfig;
+import com.xfive.live.hud.DynamicIslandHud;
+import com.xfive.live.hud.LiveChatHud;
+import com.xfive.live.hud.LyricsHud;
+import com.xfive.live.hud.MusicHud;
 import com.xfive.live.music.PlaylistManager;
 import com.xfive.live.render.GlassPanelRenderer;
 import net.minecraft.client.Minecraft;
@@ -10,32 +14,42 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * Menu pengaturan X FIVE LIVE di dalam game, dibuka dengan tombol Right Shift.
- * Kolom kiri: tampilan dan volume. Kolom kanan: kontrol musik dan posisi HUD.
+ * Kolom kiri: tampilan dan volume. Kolom kanan: kontrol musik.
+ * HUD (musik, Dynamic Island, lirik, chat) digeser langsung dengan mouse: tahan klik kiri lalu geser.
  * BELUM DIVERIFIKASI terhadap jar Minecraft 26.2 (lihat README).
  */
 public final class XFiveScreen extends Screen {
     private static final int BTN_W = 200;
     private static final int BTN_H = 20;
-    private static final int HALF_W = 64;
     private static final int ROW = 24;
     private static final int TOP = 40;
-    private static final int NUDGE = 5;
-    private static final String[] HUD_KEYS = {"musicHud", "chatHud"};
-    private static final String[] HUD_NAMES = {"Musik", "Chat"};
     private static final String[] LYRICS_POS = {"Atas", "Tengah", "Bawah"};
 
-    private int selectedHud = 0;
     private int leftX;
     private int rightX;
+
+    /** Kunci posisi HUD yang sedang diseret, atau null jika tidak ada yang diseret. */
+    private String dragKey = null;
+    private int dragOffX;
+    private int dragOffY;
+    private int dragW;
+    private int dragH;
+
+    /** Satu HUD yang bisa digeser: kunci posisi di config, nama tampilan, dan kotaknya di layar. */
+    private record Item(String key, String label, int[] box) {
+    }
 
     public XFiveScreen() {
         super(Component.literal("X FIVE LIVE"));
@@ -76,19 +90,10 @@ public final class XFiveScreen extends Screen {
                 () -> Minecraft.getInstance().setScreenAndShow(new SongListScreen(this))));
         addRenderableWidget(labelled(rightX, row(r++), BTN_W,
                 () -> "Posisi lirik: " + LYRICS_POS[c.lyricsPosition],
-                () -> c.lyricsPosition = (c.lyricsPosition + 1) % LYRICS_POS.length));
-        addRenderableWidget(labelled(rightX, row(r++), BTN_W,
-                () -> "Geser HUD: " + HUD_NAMES[selectedHud],
-                () -> selectedHud = (selectedHud + 1) % HUD_KEYS.length));
-
-        int rUp = row(r++);
-        addRenderableWidget(plain(rightX + (BTN_W - HALF_W) / 2, rUp, HALF_W, "Atas", () -> nudge(0, -NUDGE)));
-        int rMid = row(r++);
-        addRenderableWidget(plain(rightX, rMid, HALF_W, "Kiri", () -> nudge(-NUDGE, 0)));
-        addRenderableWidget(plain(rightX + BTN_W - HALF_W, rMid, HALF_W, "Kanan", () -> nudge(NUDGE, 0)));
-        int rDown = row(r++);
-        addRenderableWidget(plain(rightX + (BTN_W - HALF_W) / 2, rDown, HALF_W, "Bawah", () -> nudge(0, NUDGE)));
-
+                () -> {
+                    c.lyricsPosition = (c.lyricsPosition + 1) % LYRICS_POS.length;
+                    resetLyricsBox();
+                }));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Reset posisi HUD",
                 () -> XFiveLiveClient.CONFIG.resetHudPositions()));
 
@@ -116,6 +121,109 @@ public final class XFiveScreen extends Screen {
                 GlassPanelRenderer.MUTED);
         GlassPanelRenderer.text(g, font, "Jumlah lagu: " + XFiveLiveClient.MUSIC.playlist().size(), leftX,
                 height - 62, GlassPanelRenderer.MUTED);
+
+        GlassPanelRenderer.text(g, font, "Geser kotak HUD dengan mouse", rightX, row(8), GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "(tahan klik kiri, lalu geser)", rightX, row(8) + 11,
+                GlassPanelRenderer.MUTED);
+
+        drawHud(g, font, mouseX, mouseY);
+    }
+
+    /** Menggambar HUD asli di posisinya, lalu kotak sorot di atasnya agar mudah digeser. */
+    private void drawHud(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
+        XFiveConfig c = XFiveLiveClient.CONFIG;
+        if (c.enableMusic) {
+            if (c.dynamicIsland) {
+                // Dynamic Island hanya muncul saat musik diputar, jadi di menu digambar sebagai kotak kosong.
+                int[] b = DynamicIslandHud.box();
+                g.fill(b[0], b[1], b[0] + b[2], b[1] + b[3],
+                        GlassPanelRenderer.argb(GlassPanelRenderer.BACKGROUND, 0.7f));
+            } else {
+                MusicHud.render(g);
+            }
+        }
+        if (c.enableLyrics) {
+            LyricsHud.render(g);
+        }
+        if (c.enableChat) {
+            LiveChatHud.render(g);
+        }
+
+        int accent = GlassPanelRenderer.accent(c.theme);
+        for (Item it : hudItems()) {
+            int[] b = it.box();
+            boolean active = it.key().equals(dragKey) || inside(b, mouseX, mouseY);
+            outline(g, b, GlassPanelRenderer.argb(accent, active ? 1f : 0.4f));
+            int labelY = b[1] >= 12 ? b[1] - 11 : b[1] + b[3] + 3;
+            GlassPanelRenderer.text(g, font, it.label(), b[0], labelY,
+                    active ? GlassPanelRenderer.WHITE : GlassPanelRenderer.MUTED);
+        }
+    }
+
+    /** HUD yang aktif dan bisa digeser, dalam urutan gambar (yang terakhir ada di atas). */
+    private static List<Item> hudItems() {
+        XFiveConfig c = XFiveLiveClient.CONFIG;
+        List<Item> out = new ArrayList<>(3);
+        if (c.enableMusic) {
+            if (c.dynamicIsland) {
+                out.add(new Item("dynamicIsland", "Dynamic Island", DynamicIslandHud.box()));
+            } else {
+                out.add(new Item("musicHud", "Musik", MusicHud.box()));
+            }
+        }
+        if (c.enableLyrics) {
+            out.add(new Item("lyricsHud", "Lirik", LyricsHud.box()));
+        }
+        if (c.enableChat) {
+            out.add(new Item("chatHud", "Chat", LiveChatHud.box()));
+        }
+        return out;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        // Tombol di layar didahulukan. HUD hanya digeser jika klik mengenai area kosong.
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
+        List<Item> items = hudItems();
+        for (int i = items.size() - 1; i >= 0; i--) {
+            Item it = items.get(i);
+            int[] b = it.box();
+            if (inside(b, event.x(), event.y())) {
+                dragKey = it.key();
+                dragOffX = (int) event.x() - b[0];
+                dragOffY = (int) event.y() - b[1];
+                dragW = b[2];
+                dragH = b[3];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (dragKey == null) {
+            return super.mouseDragged(event, dx, dy);
+        }
+        // Posisi dijaga agar kotak tidak keluar dari layar.
+        int nx = Math.max(0, Math.min(width - dragW, (int) event.x() - dragOffX));
+        int ny = Math.max(0, Math.min(height - dragH, (int) event.y() - dragOffY));
+        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get(dragKey);
+        pos[0] = nx;
+        pos[1] = ny;
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (dragKey == null) {
+            return super.mouseReleased(event);
+        }
+        dragKey = null;
+        XFiveLiveClient.CONFIG.save();
+        return true;
     }
 
     @Override
@@ -129,18 +237,34 @@ public final class XFiveScreen extends Screen {
         return false;
     }
 
+    private static boolean inside(int[] b, double x, double y) {
+        return x >= b[0] && x < b[0] + b[2] && y >= b[1] && y < b[1] + b[3];
+    }
+
+    private static void outline(GuiGraphicsExtractor g, int[] b, int argb) {
+        int x1 = b[0];
+        int y1 = b[1];
+        int x2 = b[0] + b[2];
+        int y2 = b[1] + b[3];
+        g.fill(x1, y1, x2, y1 + 1, argb);
+        g.fill(x1, y2 - 1, x2, y2, argb);
+        g.fill(x1, y1, x1 + 1, y2, argb);
+        g.fill(x2 - 1, y1, x2, y2, argb);
+    }
+
+    /** Mengembalikan posisi lirik ke preset Atas/Tengah/Bawah. */
+    private static void resetLyricsBox() {
+        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get("lyricsHud");
+        pos[0] = -1;
+        pos[1] = -1;
+    }
+
     private static String tail(String s, int max) {
         return s.length() <= max ? s : "..." + s.substring(s.length() - max);
     }
 
     private int row(int index) {
         return TOP + index * ROW;
-    }
-
-    private void nudge(int dx, int dy) {
-        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get(HUD_KEYS[selectedHud]);
-        pos[0] = Math.max(0, Math.min(width - 40, pos[0] + dx));
-        pos[1] = Math.max(0, Math.min(height - 20, pos[1] + dy));
     }
 
     private static Button toggle(int x, int y, String name, BooleanSupplier get, Consumer<Boolean> set) {

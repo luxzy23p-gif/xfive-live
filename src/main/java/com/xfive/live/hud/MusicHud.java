@@ -8,12 +8,18 @@ import com.xfive.live.render.GlassPanelRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
-/** HUD musik: judul, artis, status, dan progress bar. */
+/** HUD musik: judul, artis, status, dan progress bar. Posisinya bisa digeser di menu. */
 public final class MusicHud {
-    private static final int WIDTH = 170;
-    private static final int HEIGHT = 36;
+    public static final int WIDTH = 170;
+    public static final int HEIGHT = 36;
 
     private MusicHud() {
+    }
+
+    /** Kotak HUD saat ini: {x, y, lebar, tinggi}. Dipakai juga oleh menu untuk menggeser. */
+    public static int[] box() {
+        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get("musicHud");
+        return new int[] {pos[0], pos[1], WIDTH, HEIGHT};
     }
 
     public static void render(GuiGraphicsExtractor g) {

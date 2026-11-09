@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
  * - Muncul saat musik mulai diputar.
  * - Melebar selama 3 detik saat lagu baru mulai, lalu menyusut menjadi pil kecil.
  * - Menghilang (memudar) saat musik dijeda atau berhenti.
+ * - Posisinya bisa digeser di menu. Posisi default (-1) berarti di tengah atas layar.
  *
  * onTick() menentukan keadaan dari sisi game. render() hanya menggambar dan menganimasikan.
  * BELUM DIVERIFIKASI terhadap jar Minecraft 26.2 (lihat README).
@@ -19,9 +20,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 public final class DynamicIslandHud {
     private static final long EXPAND_MS = 3000L;
     private static final int COMPACT_W = 130;
-    private static final int EXPANDED_W = 240;
-    private static final int HEIGHT = 30;
-    private static final int TOP = 6;
+    public static final int EXPANDED_W = 240;
+    public static final int HEIGHT = 30;
+    public static final int TOP = 6;
     private static final float SPEED = 4f; // perubahan per detik (0..1)
 
     private static boolean wasPlaying = false;
@@ -33,6 +34,15 @@ public final class DynamicIslandHud {
     private static long lastRenderNs = 0L;
 
     private DynamicIslandHud() {
+    }
+
+    /** Kotak Dynamic Island saat ini: {x, y, lebar, tinggi}. Lebarnya selalu lebar maksimum. */
+    public static int[] box() {
+        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get("dynamicIsland");
+        int sw = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        int x = pos[0] < 0 ? (sw - EXPANDED_W) / 2 : pos[0];
+        int y = pos[1] < 0 ? TOP : pos[1];
+        return new int[] {x, y, EXPANDED_W, HEIGHT};
     }
 
     /** Dipanggil dari client tick. Hanya membaca status musik, tanpa menggambar. */
@@ -60,12 +70,14 @@ public final class DynamicIslandHud {
         float alpha = visible * XFiveLiveClient.CONFIG.hudOpacity * XFiveLiveClient.CONFIG.customTransparency;
         int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
         int w = Math.round(COMPACT_W + (EXPANDED_W - COMPACT_W) * expand);
-        int sw = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-        int x = (sw - w) / 2;
+        // Pil kompak dipusatkan di dalam kotak lebar, supaya tetap di tengah saat melebar.
+        int[] b = box();
+        int x = b[0] + (EXPANDED_W - w) / 2;
+        int y = b[1];
 
         // garis neon tipis di luar, lalu latar gelap transparan di dalam
-        pill(g, x - 1, TOP - 1, w + 2, HEIGHT + 2, GlassPanelRenderer.argb(accent, alpha * 0.6f));
-        pill(g, x, TOP, w, HEIGHT, GlassPanelRenderer.argb(GlassPanelRenderer.BACKGROUND, alpha));
+        pill(g, x - 1, y - 1, w + 2, HEIGHT + 2, GlassPanelRenderer.argb(accent, alpha * 0.6f));
+        pill(g, x, y, w, HEIGHT, GlassPanelRenderer.argb(GlassPanelRenderer.BACKGROUND, alpha));
 
         Font font = GlassPanelRenderer.font();
         PlaylistManager.Track t = XFiveLiveClient.MUSIC.currentTrack();
@@ -75,11 +87,11 @@ public final class DynamicIslandHud {
         if (expand < 0.5f) {
             String s = GlassPanelRenderer.trim(title, 18);
             int tx = x + (w - font.width(s)) / 2;
-            GlassPanelRenderer.text(g, font, s, tx, TOP + (HEIGHT - 9) / 2, GlassPanelRenderer.WHITE);
+            GlassPanelRenderer.text(g, font, s, tx, y + (HEIGHT - 9) / 2, GlassPanelRenderer.WHITE);
         } else {
-            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(title, 30), x + 14, TOP + 5,
+            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(title, 30), x + 14, y + 5,
                     GlassPanelRenderer.WHITE);
-            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(artist, 34), x + 14, TOP + 15,
+            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(artist, 34), x + 14, y + 15,
                     GlassPanelRenderer.MUTED);
         }
 
@@ -87,7 +99,7 @@ public final class DynamicIslandHud {
         float progress = dur > 0 ? Math.min(1f, (float) XFiveLiveClient.MUSIC.positionMs() / dur) : 0f;
         int barX = x + 14;
         int barW = w - 28;
-        int barY = TOP + HEIGHT - 5;
+        int barY = y + HEIGHT - 5;
         g.fill(barX, barY, barX + barW, barY + 2, GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.15f * alpha));
         g.fill(barX, barY, barX + (int) (barW * progress), barY + 2, GlassPanelRenderer.argb(accent, alpha));
     }
