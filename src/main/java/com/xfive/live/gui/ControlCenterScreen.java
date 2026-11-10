@@ -38,6 +38,7 @@ public final class ControlCenterScreen extends Screen {
     private EditBox songSearch;
     private EditBox sourceInput;
     private double songScroll;
+    private boolean seeking;
     private boolean hudEditMode = false;
     private String draggedHudKey = null;
     private int dragOffsetX;
@@ -283,7 +284,7 @@ public final class ControlCenterScreen extends Screen {
 
         // Left "Now Playing" card beside the live playlist.
         GlassPanelRenderer.panel(g, nowX, nowY, nowW, playerY - nowY - 8,
-                Math.min(0.96f, XFiveLiveClient.CONFIG.customTransparency + 0.08f), accent);
+                Math.min(0.72f, XFiveLiveClient.CONFIG.customTransparency), accent);
         GlassPanelRenderer.text(g, font, "NOW PLAYING", nowX + 9, nowY + 10, accent);
         g.fill(nowX + 10, nowY + 34, nowX + nowW - 10, nowY + 34 + Math.min(104, nowW - 20),
                 GlassPanelRenderer.argb(accent, 0.16f));
@@ -332,13 +333,30 @@ public final class ControlCenterScreen extends Screen {
 
         // Persistent mini-player bar spanning both columns.
         GlassPanelRenderer.panel(g, contentX(), playerY, contentW(), 64,
-                Math.min(0.98f, XFiveLiveClient.CONFIG.customTransparency + 0.12f), accent);
+                Math.min(0.74f, XFiveLiveClient.CONFIG.customTransparency), accent);
         String miniTitle = currentTrack == null ? "XFiveLive Player" : currentTrack.title();
         String miniArtist = currentTrack == null ? "Choose a song from the list" : currentTrack.artist();
-        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniTitle, 23), contentX() + 9, playerY + 12, GlassPanelRenderer.WHITE);
-        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniArtist, 25), contentX() + 9, playerY + 29, GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, XFiveLiveClient.MUSIC.isPlaying() ? "Playing" : XFiveLiveClient.MUSIC.status(),
-                contentX() + 9, playerY + 45, accent);
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniTitle, 23), contentX() + 9, playerY + 10, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniArtist, 25), contentX() + 9, playerY + 25, GlassPanelRenderer.MUTED);
+
+        // Interactive seek bar: click or drag to move forward/backward in the current track.
+        long duration = XFiveLiveClient.MUSIC.durationMs();
+        long position = XFiveLiveClient.MUSIC.positionMs();
+        float progress = duration > 0L ? Math.max(0f, Math.min(1f, (float) position / duration)) : 0f;
+        int seekX = contentX() + 10;
+        int seekW = Math.max(1, contentW() - 20);
+        int seekY = playerY + 53;
+        int trackColor = GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.24f);
+        int fillColor = GlassPanelRenderer.argb(accent, 0.96f);
+        g.fill(seekX, seekY, seekX + seekW, seekY + 3, trackColor);
+        int filled = Math.round(seekW * progress);
+        if (filled > 0) g.fill(seekX, seekY, seekX + filled, seekY + 3, fillColor);
+        int knobX = seekX + filled;
+        g.fill(knobX - 2, seekY - 2, knobX + 3, seekY + 5, GlassPanelRenderer.WHITE);
+        String elapsed = formatTime(position);
+        String totalTime = formatTime(duration);
+        GlassPanelRenderer.text(g, font, elapsed, seekX, playerY + 39, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, totalTime, seekX + seekW - font.width(totalTime), playerY + 39, GlassPanelRenderer.MUTED);
     }
 
     @Override
@@ -400,6 +418,11 @@ public final class ControlCenterScreen extends Screen {
                 return true;
             }
         }
+        if (page == Page.AUDIO && songSearch != null && inSeekBar(event.x(), event.y())) {
+            seekAt(event.x());
+            seeking = true;
+            return true;
+        }
         if (page == Page.AUDIO && songSearch != null) {
             int x = audioListX();
             int w = audioListW();
@@ -437,6 +460,10 @@ public final class ControlCenterScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (seeking && page == Page.AUDIO) {
+            seekAt(event.x());
+            return true;
+        }
         if (draggedHudKey != null && hudEditMode) {
             int maxX = Math.max(0, width - 40);
             int maxY = Math.max(0, height - 24);
@@ -450,12 +477,37 @@ public final class ControlCenterScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (seeking) {
+            seeking = false;
+            return true;
+        }
         if (draggedHudKey != null) {
             draggedHudKey = null;
             XFiveLiveClient.CONFIG.save();
             return true;
         }
         return super.mouseReleased(event);
+    }
+
+    private boolean inSeekBar(double mx, double my) {
+        int left = contentX() + 7;
+        int right = contentX() + contentW() - 7;
+        int top = audioPlayerY() + 48;
+        return mx >= left && mx <= right && my >= top - 5 && my <= top + 8;
+    }
+
+    private void seekAt(double mouseX) {
+        long duration = XFiveLiveClient.MUSIC.durationMs();
+        if (duration <= 0L) return;
+        int left = contentX() + 10;
+        int trackWidth = Math.max(1, contentW() - 20);
+        float fraction = (float) ((mouseX - left) / trackWidth);
+        XFiveLiveClient.MUSIC.seekTo(Math.max(0f, Math.min(1f, fraction)));
+    }
+
+    private static String formatTime(long milliseconds) {
+        long seconds = Math.max(0L, milliseconds / 1000L);
+        return String.format(Locale.ROOT, "%d:%02d", seconds / 60L, seconds % 60L);
     }
 
     private List<Integer> filteredSongIndexes() {
