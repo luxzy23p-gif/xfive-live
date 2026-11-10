@@ -146,7 +146,7 @@ public final class ControlCenterScreen extends Screen {
         addToggle(x, y, w, "Dynamic Island", () -> c.dynamicIsland = !c.dynamicIsland); y += 28;
         addToggle(x, y, w, "Lyrics HUD", () -> c.enableLyrics = !c.enableLyrics); y += 28;
         addToggle(x, y, w, "Live Chat HUD", () -> c.enableChat = !c.enableChat); y += 32;
-        addRenderableWidget(new HudScaleSlider(x, y, w, 20)); y += 27;
+        addRenderableWidget(new HudOpacitySlider(x, y, w, 20)); y += 27;
         addRenderableWidget(button(x, y, w, 22, "Reset HUD positions", () -> {
             c.resetHudPositions(); c.save(); refreshPage();
         }));
@@ -325,15 +325,15 @@ public final class ControlCenterScreen extends Screen {
     }
 
     private static final class OpacitySlider extends AbstractSliderButton {
-        OpacitySlider(int x, int y, int w, int h) { super(x, y, w, h, Component.empty(), XFiveLiveClient.CONFIG.customTransparency); updateMessage(); }
-        @Override protected void updateMessage() { setMessage(Component.literal("Glass opacity: " + Math.round(value * 100) + "%")); }
-        @Override protected void applyValue() { XFiveLiveClient.CONFIG.customTransparency = (float) value; XFiveLiveClient.CONFIG.save(); }
+        OpacitySlider(int x, int y, int w, int h) { super(x, y, w, h, Component.empty(), (XFiveLiveClient.CONFIG.customTransparency - 0.1) / 0.9); updateMessage(); }
+        @Override protected void updateMessage() { setMessage(Component.literal("Glass opacity: " + Math.round((0.1 + value * 0.9) * 100) + "%")); }
+        @Override protected void applyValue() { XFiveLiveClient.CONFIG.customTransparency = (float) (0.1 + value * 0.9); XFiveLiveClient.CONFIG.save(); }
     }
 
-    private static final class HudScaleSlider extends AbstractSliderButton {
-        HudScaleSlider(int x, int y, int w, int h) { super(x, y, w, h, Component.empty(), (XFiveLiveClient.CONFIG.hudScale - 0.5) / 1.5); updateMessage(); }
-        @Override protected void updateMessage() { setMessage(Component.literal("HUD scale: " + Math.round((0.5 + value * 1.5) * 100) + "%")); }
-        @Override protected void applyValue() { XFiveLiveClient.CONFIG.hudScale = (float) (0.5 + value * 1.5); XFiveLiveClient.CONFIG.save(); }
+    private static final class HudOpacitySlider extends AbstractSliderButton {
+        HudOpacitySlider(int x, int y, int w, int h) { super(x, y, w, h, Component.empty(), (XFiveLiveClient.CONFIG.hudOpacity - 0.1) / 0.9); updateMessage(); }
+        @Override protected void updateMessage() { setMessage(Component.literal("HUD opacity: " + Math.round((0.1 + value * 0.9) * 100) + "%")); }
+        @Override protected void applyValue() { XFiveLiveClient.CONFIG.hudOpacity = (float) (0.1 + value * 0.9); XFiveLiveClient.CONFIG.save(); }
     }
 
     private static final class IslandWidthSlider extends AbstractSliderButton {
