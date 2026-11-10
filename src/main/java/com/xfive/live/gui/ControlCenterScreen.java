@@ -54,6 +54,11 @@ public final class ControlCenterScreen extends Screen {
         this(Page.HOME);
     }
 
+    /** Opens the unified music library/player directly from the single music-center keybind. */
+    public static ControlCenterScreen audio() {
+        return new ControlCenterScreen(Page.AUDIO);
+    }
+
     private ControlCenterScreen(Page page) {
         super(Component.literal("XFiveLive Control Center"));
         this.page = page;
