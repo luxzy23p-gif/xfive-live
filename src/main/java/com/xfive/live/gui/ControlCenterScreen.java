@@ -107,8 +107,6 @@ public final class ControlCenterScreen extends Screen {
                 addRenderableWidget(button(contentX, y, contentW, 24, "Shuffle: " + (XFiveLiveClient.CONFIG.shuffle ? "ON" : "OFF"),
                         XFiveLiveClient::toggleShuffle));
                 y += 34;
-                addRenderableWidget(button(contentX, y, contentW, 24, "Open Minecraft keybind settings",
-                        () -> Minecraft.getInstance().setScreenAndShow(new net.minecraft.client.gui.screens.options.ControlsScreen(this, Minecraft.getInstance().options))));
             }
             case APPEARANCE -> {
                 XFiveConfig c = XFiveLiveClient.CONFIG;
@@ -174,13 +172,14 @@ public final class ControlCenterScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(g, mouseX, mouseY, partialTick);
         int panelW = Math.min(620, width - 16);
         int panelH = Math.min(350, height - 16);
         int x = Math.max(8, (width - 620) / 2);
         int y = Math.max(8, (height - 350) / 2);
         int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
-        GlassPanelRenderer.panel(g, x, y, panelW, panelH, 0.72f, accent);
+        GlassPanelRenderer.panel(g, x, y, panelW, panelH,
+                XFiveLiveClient.CONFIG.customTransparency, accent);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
         g.fill(x + SIDEBAR_W, y + 12, x + SIDEBAR_W + 1, y + panelH - 12,
                 GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.14f));
         Font font = GlassPanelRenderer.font();
