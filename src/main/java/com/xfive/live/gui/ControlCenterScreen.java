@@ -113,9 +113,9 @@ public final class ControlCenterScreen extends Screen {
         addRenderableWidget(button(sx + 10, sy + ph - 34, SIDEBAR_W - 20, 24, "Close", this::onClose));
     }
 
-    private int audioNowWidth() { return Math.min(166, Math.max(132, contentW() / 3)); }
+    private int audioNowWidth() { return Math.min(166, Math.max(72, contentW() / 3)); }
     private int audioListX() { return contentX() + audioNowWidth() + 12; }
-    private int audioListW() { return Math.max(120, contentW() - audioNowWidth() - 12); }
+    private int audioListW() { return Math.max(70, contentW() - audioNowWidth() - 12); }
     private int audioPlayerY() { return panelY() + panelH() - 76; }
     private int audioListTop() { return songSearch == null ? contentTop() + 24 : songSearch.getY() + 21; }
     private int audioListBottom() { return audioPlayerY() - 10; }
@@ -126,24 +126,28 @@ public final class ControlCenterScreen extends Screen {
         int listW = Math.max(120, w - nowW - 12);
         int playerY = audioPlayerY();
 
-        songSearch = new EditBox(GlassPanelRenderer.font(), listX, y, Math.max(80, listW - 66), 19,
+        int refreshW = Math.min(62, Math.max(38, listW / 4));
+        int searchW = Math.max(40, listW - refreshW - 4);
+        songSearch = new EditBox(GlassPanelRenderer.font(), listX, y + 20, searchW, 19,
                 Component.literal("Search songs"));
         songSearch.setMaxLength(80);
         songSearch.setHint(Component.literal("Search title or artist"));
         songSearch.setResponder(s -> songScroll = 0);
         addRenderableWidget(songSearch);
-        addRenderableWidget(button(listX + listW - 62, y, 62, 19, "Refresh", () -> {
+        addRenderableWidget(button(listX + listW - refreshW, y + 20, refreshW, 19, "↻", () -> {
             XFiveLiveClient.refreshMusic();
             songScroll = 0;
         }));
 
         int pathY = playerY - 42;
-        sourceInput = new EditBox(GlassPanelRenderer.font(), x + 7, pathY, Math.max(65, nowW - 48), 18,
+        int addW = Math.min(29, Math.max(20, nowW / 4));
+        int pathW = Math.max(40, nowW - addW - 16);
+        sourceInput = new EditBox(GlassPanelRenderer.font(), x + 7, pathY, pathW, 18,
                 Component.literal("Music folder/file"));
         sourceInput.setMaxLength(300);
         sourceInput.setHint(Component.literal("Folder or file path"));
         addRenderableWidget(sourceInput);
-        addRenderableWidget(button(x + nowW - 36, pathY, 29, 18, "+", () -> {
+        addRenderableWidget(button(x + 7 + pathW + 3, pathY, addW, 18, "+", () -> {
             XFiveLiveClient.addSource(sourceInput.getValue());
             sourceInput.setValue("");
             XFiveLiveClient.refreshMusic();
