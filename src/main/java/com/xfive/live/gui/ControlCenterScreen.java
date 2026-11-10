@@ -113,47 +113,74 @@ public final class ControlCenterScreen extends Screen {
         addRenderableWidget(button(sx + 10, sy + ph - 34, SIDEBAR_W - 20, 24, "Close", this::onClose));
     }
 
+    private int audioNowWidth() { return Math.min(166, Math.max(132, contentW() / 3)); }
+    private int audioListX() { return contentX() + audioNowWidth() + 12; }
+    private int audioListW() { return Math.max(120, contentW() - audioNowWidth() - 12); }
+    private int audioPlayerY() { return panelY() + panelH() - 76; }
+    private int audioListTop() { return songSearch == null ? contentTop() + 24 : songSearch.getY() + 21; }
+    private int audioListBottom() { return audioPlayerY() - 10; }
+
     private void initAudio(int x, int w, int y) {
-        XFiveConfig c = XFiveLiveClient.CONFIG;
-        addRenderableWidget(button(x, y, w / 3 - 3, 24, "Previous", () -> { XFiveLiveClient.MUSIC.previous(); refreshPage(); }));
-        addRenderableWidget(button(x + w / 3, y, w / 3 - 3, 24, XFiveLiveClient.MUSIC.isPlaying() ? "Pause" : "Play",
-                () -> { XFiveLiveClient.MUSIC.togglePause(); refreshPage(); }));
-        addRenderableWidget(button(x + 2 * w / 3, y, w - 2 * (w / 3) , 24, "Next",
-                () -> { XFiveLiveClient.MUSIC.next(); refreshPage(); }));
-        y += 30;
-        addRenderableWidget(new VolumeSlider(x, y, w, 20)); y += 27;
-        repeatButton = Button.builder(Component.literal("Repeat: " + repeatLabel()), b -> {
-            XFiveLiveClient.cycleRepeat();
-            b.setMessage(Component.literal("Repeat: " + repeatLabel()));
-        }).bounds(x, y, w / 2 - 3, 22).build();
-        addRenderableWidget(repeatButton);
-        shuffleButton = Button.builder(Component.literal("Shuffle: " + onOff(c.shuffle)), b -> {
-            XFiveLiveClient.toggleShuffle();
-            b.setMessage(Component.literal("Shuffle: " + onOff(XFiveLiveClient.CONFIG.shuffle)));
-        }).bounds(x + w / 2 + 3, y, w / 2 - 3, 22).build();
-        addRenderableWidget(shuffleButton);
-        y += 27;
-        songSearch = new EditBox(GlassPanelRenderer.font(), x, y, w, 18, Component.literal("Search songs"));
+        int nowW = audioNowWidth();
+        int listX = x + nowW + 12;
+        int listW = Math.max(120, w - nowW - 12);
+        int playerY = audioPlayerY();
+
+        songSearch = new EditBox(GlassPanelRenderer.font(), listX, y, Math.max(80, listW - 66), 19,
+                Component.literal("Search songs"));
         songSearch.setMaxLength(80);
         songSearch.setHint(Component.literal("Search title or artist"));
         songSearch.setResponder(s -> songScroll = 0);
         addRenderableWidget(songSearch);
-        y += 23;
-        int inputW = Math.max(70, w - 62);
-        sourceInput = new EditBox(GlassPanelRenderer.font(), x, panelY() + panelH() - 53, inputW, 18,
-                Component.literal("Add music path"));
+        addRenderableWidget(button(listX + listW - 62, y, 62, 19, "Refresh", () -> {
+            XFiveLiveClient.refreshMusic();
+            songScroll = 0;
+        }));
+
+        int pathY = playerY - 42;
+        sourceInput = new EditBox(GlassPanelRenderer.font(), x + 7, pathY, Math.max(65, nowW - 48), 18,
+                Component.literal("Music folder/file"));
         sourceInput.setMaxLength(300);
-        sourceInput.setHint(Component.literal("Folder/file path"));
+        sourceInput.setHint(Component.literal("Folder or file path"));
         addRenderableWidget(sourceInput);
-        addRenderableWidget(button(x + inputW + 4, panelY() + panelH() - 53, w - inputW - 4, 18,
-                "Add", () -> {
-                    String result = XFiveLiveClient.addSource(sourceInput.getValue());
-                    sourceInput.setValue("");
-                    XFiveLiveClient.refreshMusic();
-                    refreshPage();
-                }));
-        addRenderableWidget(button(x, panelY() + panelH() - 29, w, 18, "Refresh playlist",
-                () -> { XFiveLiveClient.refreshMusic(); songScroll = 0; refreshPage(); }));
+        addRenderableWidget(button(x + nowW - 36, pathY, 29, 18, "+", () -> {
+            XFiveLiveClient.addSource(sourceInput.getValue());
+            sourceInput.setValue("");
+            XFiveLiveClient.refreshMusic();
+        }));
+
+        int controlsX = x + nowW + 10;
+        int controlsW = Math.max(120, w - nowW - 20);
+        int gap = 4;
+        int prevW = 38, playW = 48, nextW = 38, repeatW = 54, shuffleW = 58;
+        int used = prevW + playW + nextW + repeatW + shuffleW + gap * 5;
+        int volumeW = Math.max(58, controlsW - used);
+        int cy = playerY + 25;
+
+        addRenderableWidget(button(controlsX, cy, prevW, 21, "Prev", XFiveLiveClient.MUSIC::previous));
+        playPauseButton = Button.builder(Component.literal(XFiveLiveClient.MUSIC.isPlaying() ? "Pause" : "Play"),
+                b -> {
+                    XFiveLiveClient.MUSIC.togglePause();
+                    b.setMessage(Component.literal(XFiveLiveClient.MUSIC.isPlaying() ? "Pause" : "Play"));
+                }).bounds(controlsX + prevW + gap, cy, playW, 21).build();
+        addRenderableWidget(playPauseButton);
+        addRenderableWidget(button(controlsX + prevW + playW + gap * 2, cy, nextW, 21, "Next",
+                XFiveLiveClient.MUSIC::next));
+        int rx = controlsX + prevW + playW + nextW + gap * 3;
+        repeatButton = Button.builder(Component.literal("Repeat " + repeatLabel()), b -> {
+            XFiveLiveClient.cycleRepeat();
+            b.setMessage(Component.literal("Repeat " + repeatLabel()));
+        }).bounds(rx, cy, repeatW, 21).build();
+        addRenderableWidget(repeatButton);
+        int sx = rx + repeatW + gap;
+        shuffleButton = Button.builder(Component.literal("Shuffle " + onOff(XFiveLiveClient.CONFIG.shuffle)), b -> {
+            XFiveLiveClient.toggleShuffle();
+            b.setMessage(Component.literal("Shuffle " + onOff(XFiveLiveClient.CONFIG.shuffle)));
+        }).bounds(sx, cy, shuffleW, 21).build();
+        addRenderableWidget(shuffleButton);
+        int vx = sx + shuffleW + gap;
+        if (vx + volumeW > x + w) volumeW = Math.max(48, x + w - vx);
+        addRenderableWidget(new VolumeSlider(vx, cy, volumeW, 21));
     }
 
     private void initHud(int x, int w, int y) {
@@ -235,18 +262,43 @@ public final class ControlCenterScreen extends Screen {
 
     private void drawAudioList(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
         if (page != Page.AUDIO || songSearch == null) return;
-        int x = contentX();
-        int w = contentW();
-        int top = songSearch.getY() + 21;
-        int bottom = panelY() + panelH() - 78;
+        int x = audioListX();
+        int w = audioListW();
+        int top = audioListTop();
+        int bottom = audioListBottom();
+        int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
+        int nowX = contentX();
+        int nowW = audioNowWidth();
+        int nowY = contentTop() - 2;
+        int playerY = audioPlayerY();
+
+        // Left "Now Playing" card beside the live playlist.
+        GlassPanelRenderer.panel(g, nowX, nowY, nowW, playerY - nowY - 8,
+                Math.min(0.96f, XFiveLiveClient.CONFIG.customTransparency + 0.08f), accent);
+        GlassPanelRenderer.text(g, font, "NOW PLAYING", nowX + 9, nowY + 10, accent);
+        g.fill(nowX + 10, nowY + 34, nowX + nowW - 10, nowY + 34 + Math.min(104, nowW - 20),
+                GlassPanelRenderer.argb(accent, 0.16f));
+        GlassPanelRenderer.text(g, font, "♫", nowX + nowW / 2 - 5, nowY + 66, GlassPanelRenderer.WHITE);
+        PlaylistManager.Track currentTrack = XFiveLiveClient.MUSIC.currentTrack();
+        String currentTitle = currentTrack == null ? "No song selected" : currentTrack.title();
+        String currentArtist = currentTrack == null ? XFiveLiveClient.MUSIC.status() : currentTrack.artist();
+        int infoY = nowY + 34 + Math.min(104, nowW - 20) + 13;
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(currentTitle, 22), nowX + 9, infoY, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(currentArtist, 24), nowX + 9, infoY + 13, GlassPanelRenderer.MUTED);
+        String state = XFiveLiveClient.MUSIC.isPlaying() ? "PLAYING" :
+                (XFiveLiveClient.MUSIC.isLoading() ? "LOADING" : XFiveLiveClient.MUSIC.status().toUpperCase(Locale.ROOT));
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(state, 20), nowX + 9, infoY + 31, accent);
+        int total = XFiveLiveClient.MUSIC.playlist().size();
+        int active = XFiveLiveClient.MUSIC.playlist().currentIndex();
+        GlassPanelRenderer.text(g, font, (active >= 0 ? (active + 1) : 0) + " / " + total + " tracks",
+                nowX + 9, infoY + 45, GlassPanelRenderer.MUTED);
+
+        // Right-side song list.
+        g.fill(x, top - 2, x + w, bottom, GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.035f));
+        GlassPanelRenderer.text(g, font, "TITLE", x + 7, top - 14, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "ARTIST", x + Math.max(90, w - 100), top - 14, GlassPanelRenderer.MUTED);
         List<PlaylistManager.Track> tracks = XFiveLiveClient.MUSIC.playlist().tracks();
-        String query = songSearch.getValue().strip().toLowerCase(Locale.ROOT);
-        List<Integer> shown = new ArrayList<>();
-        for (int i = 0; i < tracks.size(); i++) {
-            PlaylistManager.Track t = tracks.get(i);
-            if (query.isEmpty() || t.title().toLowerCase(Locale.ROOT).contains(query)
-                    || t.artist().toLowerCase(Locale.ROOT).contains(query)) shown.add(i);
-        }
+        List<Integer> shown = filteredSongIndexes();
         int visibleRows = Math.max(1, (bottom - top) / ROW_H);
         songScroll = Math.max(0, Math.min(Math.max(0, shown.size() - visibleRows), songScroll));
         int start = (int) songScroll;
@@ -257,17 +309,27 @@ public final class ControlCenterScreen extends Screen {
             boolean current = idx == XFiveLiveClient.MUSIC.playlist().currentIndex();
             boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= ry && mouseY <= ry + ROW_H;
             if (current || hover) {
-                g.fill(x, ry, x + w, ry + ROW_H - 1,
-                        GlassPanelRenderer.argb(GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme), current ? 0.28f : 0.12f));
+                g.fill(x + 2, ry, x + w - 2, ry + ROW_H - 1,
+                        GlassPanelRenderer.argb(accent, current ? 0.27f : 0.11f));
             }
-            String title = GlassPanelRenderer.trim(t.title(), 38);
-            String artist = GlassPanelRenderer.trim(t.artist(), 42);
-            GlassPanelRenderer.text(g, font, (current ? "▶ " : (idx + 1) + "  ") + title, x + 5, ry + 2,
-                    current ? GlassPanelRenderer.WHITE : GlassPanelRenderer.MUTED);
-            GlassPanelRenderer.text(g, font, artist, x + 25, ry + 12, GlassPanelRenderer.MUTED);
+            String title = GlassPanelRenderer.trim(t.title(), Math.max(10, Math.min(30, (w - 120) / 6)));
+            String artist = GlassPanelRenderer.trim(t.artist(), 16);
+            GlassPanelRenderer.text(g, font, (current ? "▶ " : (idx + 1) + "  ") + title,
+                    x + 7, ry + 2, current ? GlassPanelRenderer.WHITE : GlassPanelRenderer.MUTED);
+            GlassPanelRenderer.text(g, font, artist, x + Math.max(90, w - 100), ry + 6, GlassPanelRenderer.MUTED);
         }
         String count = shown.size() + " / " + tracks.size() + " songs";
-        GlassPanelRenderer.text(g, font, count, x + w - font.width(count), bottom + 2, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, count, x + w - font.width(count) - 5, bottom + 2, GlassPanelRenderer.MUTED);
+
+        // Persistent mini-player bar spanning both columns.
+        GlassPanelRenderer.panel(g, contentX(), playerY, contentW(), 64,
+                Math.min(0.98f, XFiveLiveClient.CONFIG.customTransparency + 0.12f), accent);
+        String miniTitle = currentTrack == null ? "XFiveLive Player" : currentTrack.title();
+        String miniArtist = currentTrack == null ? "Choose a song from the list" : currentTrack.artist();
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniTitle, 23), contentX() + 9, playerY + 12, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(miniArtist, 25), contentX() + 9, playerY + 29, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, XFiveLiveClient.MUSIC.isPlaying() ? "Playing" : XFiveLiveClient.MUSIC.status(),
+                contentX() + 9, playerY + 45, accent);
     }
 
     @Override
@@ -330,10 +392,10 @@ public final class ControlCenterScreen extends Screen {
             }
         }
         if (page == Page.AUDIO && songSearch != null) {
-            int x = contentX();
-            int w = contentW();
-            int top = songSearch.getY() + 21;
-            int bottom = panelY() + panelH() - 78;
+            int x = audioListX();
+            int w = audioListW();
+            int top = audioListTop();
+            int bottom = audioListBottom();
             if (event.x() >= x && event.x() <= x + w && event.y() >= top && event.y() < bottom) {
                 int visibleRows = Math.max(1, (bottom - top) / ROW_H);
                 int row = (int) ((event.y() - top) / ROW_H);
@@ -401,7 +463,8 @@ public final class ControlCenterScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (page == Page.AUDIO) {
+        if (page == Page.AUDIO && mouseX >= audioListX() && mouseX <= audioListX() + audioListW()
+                && mouseY >= audioListTop() && mouseY <= audioListBottom()) {
             songScroll -= scrollY;
             return true;
         }
