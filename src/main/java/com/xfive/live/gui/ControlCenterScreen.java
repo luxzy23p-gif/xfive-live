@@ -38,6 +38,17 @@ public final class ControlCenterScreen extends Screen {
     private EditBox songSearch;
     private EditBox sourceInput;
     private double songScroll;
+    private boolean hudEditMode = false;
+    private String draggedHudKey = null;
+    private int dragOffsetX;
+    private int dragOffsetY;
+    private Button playPauseButton;
+    private Button repeatButton;
+    private Button shuffleButton;
+    private Button islandModeButton;
+    private Button islandColorButton;
+    private Button pausedButton;
+    private Button hudEditButton;
 
     public ControlCenterScreen() {
         this(Page.HOME);
@@ -111,10 +122,16 @@ public final class ControlCenterScreen extends Screen {
                 () -> { XFiveLiveClient.MUSIC.next(); refreshPage(); }));
         y += 30;
         addRenderableWidget(new VolumeSlider(x, y, w, 20)); y += 27;
-        addRenderableWidget(button(x, y, w / 2 - 3, 22, "Repeat: " + repeatLabel(),
-                () -> { XFiveLiveClient.cycleRepeat(); refreshPage(); }));
-        addRenderableWidget(button(x + w / 2 + 3, y, w / 2 - 3, 22,
-                "Shuffle: " + onOff(c.shuffle), () -> { XFiveLiveClient.toggleShuffle(); refreshPage(); }));
+        repeatButton = Button.builder(Component.literal("Repeat: " + repeatLabel()), b -> {
+            XFiveLiveClient.cycleRepeat();
+            b.setMessage(Component.literal("Repeat: " + repeatLabel()));
+        }).bounds(x, y, w / 2 - 3, 22).build();
+        addRenderableWidget(repeatButton);
+        shuffleButton = Button.builder(Component.literal("Shuffle: " + onOff(c.shuffle)), b -> {
+            XFiveLiveClient.toggleShuffle();
+            b.setMessage(Component.literal("Shuffle: " + onOff(XFiveLiveClient.CONFIG.shuffle)));
+        }).bounds(x + w / 2 + 3, y, w / 2 - 3, 22).build();
+        addRenderableWidget(shuffleButton);
         y += 27;
         songSearch = new EditBox(GlassPanelRenderer.font(), x, y, w, 18, Component.literal("Search songs"));
         songSearch.setMaxLength(80);
@@ -145,36 +162,58 @@ public final class ControlCenterScreen extends Screen {
         addToggle(x, y, w, "Music HUD", () -> c.enableMusic = !c.enableMusic); y += 28;
         addToggle(x, y, w, "Dynamic Island", () -> c.dynamicIsland = !c.dynamicIsland); y += 28;
         addToggle(x, y, w, "Lyrics HUD", () -> c.enableLyrics = !c.enableLyrics); y += 28;
-        addToggle(x, y, w, "Live Chat HUD", () -> c.enableChat = !c.enableChat); y += 32;
+        addToggle(x, y, w, "Live Chat HUD", () -> c.enableChat = !c.enableChat); y += 28;
         addRenderableWidget(new HudOpacitySlider(x, y, w, 20)); y += 27;
+        addRenderableWidget(new IslandWidthSlider(x, y, w, 20)); y += 25;
+        addRenderableWidget(new IslandHeightSlider(x, y, w, 20)); y += 26;
+        hudEditButton = Button.builder(Component.literal("Drag HUD: " + onOff(hudEditMode)), b -> {
+            hudEditMode = !hudEditMode;
+            b.setMessage(Component.literal("Drag HUD: " + onOff(hudEditMode)));
+        }).bounds(x, y, w, 22).build();
+        addRenderableWidget(hudEditButton); y += 26;
         addRenderableWidget(button(x, y, w, 22, "Reset HUD positions", () -> {
-            c.resetHudPositions(); c.save(); refreshPage();
+            c.resetHudPositions();
+            c.save();
+            draggedHudKey = null;
         }));
     }
 
     private void initControls(int x, int w, int y) {
         XFiveConfig c = XFiveLiveClient.CONFIG;
-        addRenderableWidget(button(x, y, w, 22, "Dynamic Island: " + (c.islandCard ? "Card" : "Pill"),
-                () -> { XFiveLiveClient.toggleIslandCard(); refreshPage(); })); y += 26;
+        islandModeButton = Button.builder(Component.literal("Dynamic Island: " + (c.islandCard ? "Card" : "Pill")),
+                b -> { XFiveLiveClient.toggleIslandCard(); b.setMessage(Component.literal("Dynamic Island: " + (c.islandCard ? "Card" : "Pill"))); })
+                .bounds(x, y, w, 22).build();
+        addRenderableWidget(islandModeButton); y += 26;
         addRenderableWidget(new IslandWidthSlider(x, y, w, 20)); y += 25;
         addRenderableWidget(new IslandHeightSlider(x, y, w, 20)); y += 25;
-        addRenderableWidget(button(x, y, w, 22, "Island color: " + c.islandColor,
-                () -> { XFiveLiveClient.cycleIslandColor(); refreshPage(); })); y += 26;
-        addRenderableWidget(button(x, y, w, 22, "Show while paused: " + onOff(c.islandShowPaused),
-                () -> { XFiveLiveClient.toggleIslandShowPaused(); refreshPage(); })); y += 26;
-        addRenderableWidget(button(x, y, w, 22, "Repeat: " + repeatLabel(),
-                () -> { XFiveLiveClient.cycleRepeat(); refreshPage(); })); y += 26;
-        addRenderableWidget(button(x, y, w, 22, "Shuffle: " + onOff(c.shuffle),
-                () -> { XFiveLiveClient.toggleShuffle(); refreshPage(); })); y += 26;
+        islandColorButton = Button.builder(Component.literal("Island color: " + c.islandColor),
+                b -> { XFiveLiveClient.cycleIslandColor(); b.setMessage(Component.literal("Island color: " + c.islandColor)); })
+                .bounds(x, y, w, 22).build();
+        addRenderableWidget(islandColorButton); y += 26;
+        pausedButton = Button.builder(Component.literal("Show while paused: " + onOff(c.islandShowPaused)),
+                b -> { XFiveLiveClient.toggleIslandShowPaused(); b.setMessage(Component.literal("Show while paused: " + onOff(c.islandShowPaused))); })
+                .bounds(x, y, w, 22).build();
+        addRenderableWidget(pausedButton); y += 26;
+        repeatButton = Button.builder(Component.literal("Repeat: " + repeatLabel()),
+                b -> { XFiveLiveClient.cycleRepeat(); b.setMessage(Component.literal("Repeat: " + repeatLabel())); })
+                .bounds(x, y, w, 22).build();
+        addRenderableWidget(repeatButton); y += 26;
+        shuffleButton = Button.builder(Component.literal("Shuffle: " + onOff(c.shuffle)),
+                b -> { XFiveLiveClient.toggleShuffle(); b.setMessage(Component.literal("Shuffle: " + onOff(c.shuffle))); })
+                .bounds(x, y, w, 22).build();
+        addRenderableWidget(shuffleButton); y += 26;
         addRenderableWidget(button(x, y, w, 22, "Reset Island size", () -> {
             XFiveLiveClient.resetIslandSize(); refreshPage();
         }));
     }
 
     private void addToggle(int x, int y, int w, String label, Runnable action) {
-        addRenderableWidget(button(x, y, w, 23, label + ": " + toggleState(label), () -> {
-            action.run(); XFiveLiveClient.CONFIG.save(); refreshPage();
-        }));
+        Button b = Button.builder(Component.literal(label + ": " + toggleState(label)), button -> {
+            action.run();
+            XFiveLiveClient.CONFIG.save();
+            button.setMessage(Component.literal(label + ": " + toggleState(label)));
+        }).bounds(x, y, w, 23).build();
+        addRenderableWidget(b);
     }
 
     private String toggleState(String label) {
@@ -244,6 +283,15 @@ public final class ControlCenterScreen extends Screen {
         GlassPanelRenderer.text(g, font, "CONTROL CENTER", x + 12, y + 27, GlassPanelRenderer.MUTED);
         GlassPanelRenderer.text(g, font, page.title, x + SIDEBAR_W + 18, y + 20, accent);
         drawAudioList(g, font, mouseX, mouseY);
+        if (page == Page.HUD && hudEditMode) {
+            int[] island = com.xfive.live.hud.DynamicIslandHud.box();
+            int[] music = com.xfive.live.hud.MusicHud.box();
+            GlassPanelRenderer.text(g, font, "DRAG HUD: click and move", 12, height - 18, accent);
+            g.fill(island[0] - 2, island[1] - 2, island[0] + island[2] + 2, island[1] + island[3] + 2,
+                    GlassPanelRenderer.argb(accent, 0.22f));
+            g.fill(music[0] - 2, music[1] - 2, music[0] + music[2] + 2, music[1] + music[3] + 2,
+                    GlassPanelRenderer.argb(GlassPanelRenderer.CYAN, 0.18f));
+        }
         PlaylistManager.Track track = XFiveLiveClient.MUSIC.currentTrack();
         String now = track == null ? XFiveLiveClient.MUSIC.status() : track.title() + " - " + track.artist();
         GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(now, 46),
@@ -253,6 +301,26 @@ public final class ControlCenterScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (super.mouseClicked(event, doubleClick)) return true;
+        if (page == Page.HUD && hudEditMode) {
+            int[] island = com.xfive.live.hud.DynamicIslandHud.box();
+            int[] music = com.xfive.live.hud.MusicHud.box();
+            if (inside(event.x(), event.y(), island)) {
+                draggedHudKey = "dynamicIsland";
+                dragOffsetX = (int) event.x() - island[0];
+                dragOffsetY = (int) event.y() - island[1];
+                if (XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[0] < 0) {
+                    XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[0] = island[0];
+                    XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[1] = island[1];
+                }
+                return true;
+            }
+            if (inside(event.x(), event.y(), music)) {
+                draggedHudKey = "musicHud";
+                dragOffsetX = (int) event.x() - music[0];
+                dragOffsetY = (int) event.y() - music[1];
+                return true;
+            }
+        }
         if (page == Page.AUDIO && songSearch != null) {
             int x = contentX();
             int w = contentW();
@@ -271,6 +339,33 @@ public final class ControlCenterScreen extends Screen {
             }
         }
         return false;
+    }
+
+    private static boolean inside(double mx, double my, int[] box) {
+        return mx >= box[0] && mx <= box[0] + box[2] && my >= box[1] && my <= box[1] + box[3];
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (draggedHudKey != null && hudEditMode) {
+            int maxX = Math.max(0, width - 40);
+            int maxY = Math.max(0, height - 24);
+            int[] pos = XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey);
+            pos[0] = Math.max(0, Math.min(maxX, (int) event.x() - dragOffsetX));
+            pos[1] = Math.max(0, Math.min(maxY, (int) event.y() - dragOffsetY));
+            return true;
+        }
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (draggedHudKey != null) {
+            draggedHudKey = null;
+            XFiveLiveClient.CONFIG.save();
+            return true;
+        }
+        return super.mouseReleased(event);
     }
 
     private List<Integer> filteredSongIndexes() {
@@ -304,7 +399,7 @@ public final class ControlCenterScreen extends Screen {
 
     private static String onOff(boolean value) { return value ? "ON" : "OFF"; }
     private void open(Page target) { Minecraft.getInstance().setScreenAndShow(new ControlCenterScreen(target)); }
-    private void refreshPage() { XFiveLiveClient.CONFIG.save(); Minecraft.getInstance().setScreenAndShow(new ControlCenterScreen(page)); }
+    private void refreshPage() { XFiveLiveClient.CONFIG.save(); }
     private void saveAndReopen() { XFiveLiveClient.CONFIG.save(); refreshPage(); }
 
     private static Button button(int x, int y, int w, int h, String label, Runnable action) {
