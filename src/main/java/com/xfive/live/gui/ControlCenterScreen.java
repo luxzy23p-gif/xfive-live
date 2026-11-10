@@ -284,13 +284,19 @@ public final class ControlCenterScreen extends Screen {
         GlassPanelRenderer.text(g, font, page.title, x + SIDEBAR_W + 18, y + 20, accent);
         drawAudioList(g, font, mouseX, mouseY);
         if (page == Page.HUD && hudEditMode) {
-            int[] island = com.xfive.live.hud.DynamicIslandHud.box();
-            int[] music = com.xfive.live.hud.MusicHud.box();
-            GlassPanelRenderer.text(g, font, "DRAG HUD: click and move", 12, height - 18, accent);
-            g.fill(island[0] - 2, island[1] - 2, island[0] + island[2] + 2, island[1] + island[3] + 2,
-                    GlassPanelRenderer.argb(accent, 0.22f));
-            g.fill(music[0] - 2, music[1] - 2, music[0] + music[2] + 2, music[1] + music[3] + 2,
-                    GlassPanelRenderer.argb(GlassPanelRenderer.CYAN, 0.18f));
+            int[][] boxes = {
+                    com.xfive.live.hud.DynamicIslandHud.box(),
+                    com.xfive.live.hud.MusicHud.box(),
+                    com.xfive.live.hud.LyricsHud.box(),
+                    com.xfive.live.hud.LiveChatHud.box()
+            };
+            GlassPanelRenderer.text(g, font, "DRAG HUD: click a highlighted HUD and move it", 12, height - 18, accent);
+            for (int i = 0; i < boxes.length; i++) {
+                int[] b = boxes[i];
+                int tint = i % 2 == 0 ? accent : GlassPanelRenderer.CYAN;
+                g.fill(b[0] - 2, b[1] - 2, b[0] + b[2] + 2, b[1] + b[3] + 2,
+                        GlassPanelRenderer.argb(tint, 0.18f));
+            }
         }
         PlaylistManager.Track track = XFiveLiveClient.MUSIC.currentTrack();
         String now = track == null ? XFiveLiveClient.MUSIC.status() : track.title() + " - " + track.artist();
@@ -304,20 +310,22 @@ public final class ControlCenterScreen extends Screen {
         if (page == Page.HUD && hudEditMode) {
             int[] island = com.xfive.live.hud.DynamicIslandHud.box();
             int[] music = com.xfive.live.hud.MusicHud.box();
+            int[] lyrics = com.xfive.live.hud.LyricsHud.box();
+            int[] chat = com.xfive.live.hud.LiveChatHud.box();
             if (inside(event.x(), event.y(), island)) {
-                draggedHudKey = "dynamicIsland";
-                dragOffsetX = (int) event.x() - island[0];
-                dragOffsetY = (int) event.y() - island[1];
-                if (XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[0] < 0) {
-                    XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[0] = island[0];
-                    XFiveLiveClient.CONFIG.hudPositions.get(draggedHudKey)[1] = island[1];
-                }
+                beginHudDrag("dynamicIsland", island, event.x(), event.y());
                 return true;
             }
             if (inside(event.x(), event.y(), music)) {
-                draggedHudKey = "musicHud";
-                dragOffsetX = (int) event.x() - music[0];
-                dragOffsetY = (int) event.y() - music[1];
+                beginHudDrag("musicHud", music, event.x(), event.y());
+                return true;
+            }
+            if (inside(event.x(), event.y(), lyrics)) {
+                beginHudDrag("lyricsHud", lyrics, event.x(), event.y());
+                return true;
+            }
+            if (inside(event.x(), event.y(), chat)) {
+                beginHudDrag("chatHud", chat, event.x(), event.y());
                 return true;
             }
         }
@@ -339,6 +347,17 @@ public final class ControlCenterScreen extends Screen {
             }
         }
         return false;
+    }
+
+    private void beginHudDrag(String key, int[] box, double mx, double my) {
+        draggedHudKey = key;
+        dragOffsetX = (int) mx - box[0];
+        dragOffsetY = (int) my - box[1];
+        int[] pos = XFiveLiveClient.CONFIG.hudPositions.get(key);
+        if (pos[0] < 0 || pos[1] < 0) {
+            pos[0] = box[0];
+            pos[1] = box[1];
+        }
     }
 
     private static boolean inside(double mx, double my, int[] box) {
