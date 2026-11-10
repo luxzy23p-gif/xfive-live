@@ -5,7 +5,7 @@ import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
 import com.xfive.live.gui.MusicControlScreen;
 import com.xfive.live.gui.SongListScreen;
-import com.xfive.live.gui.XFiveScreen;
+import com.xfive.live.gui.ControlCenterScreen;
 import com.xfive.live.hud.DynamicIslandHud;
 import com.xfive.live.hud.LiveChatHud;
 import com.xfive.live.hud.LyricsHud;
@@ -266,7 +266,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
 
     private static void onTick() {
         while (settingsKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new XFiveScreen());
+            Minecraft.getInstance().setScreenAndShow(new ControlCenterScreen());
         }
         while (hudKey.consumeClick()) {
             CONFIG.showHud = !CONFIG.showHud;
