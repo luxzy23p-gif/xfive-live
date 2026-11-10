@@ -25,49 +25,66 @@ public final class AudioPlayer {
     private boolean wantPlaying = false;
     private String lastError = null;
 
-    public boolean load(Path file) {
-        close();
-        lastError = null;
+    /** Lagu yang sudah didekode dan siap diserahkan ke OpenAL. */
+    public record Prepared(ByteBuffer data, int format, int rate, long durationMs) {
+    }
+
+    /**
+     * Mendekode file menjadi data siap putar. Bagian berat ini TIDAK menyentuh OpenAL,
+     * jadi aman dipanggil dari thread latar agar game tidak tersendat.
+     */
+    public static Prepared prepare(Path file) throws IOException {
         if (file == null) {
-            lastError = "Tidak ada file";
-            return false;
+            throw new IOException("Tidak ada file");
         }
         String name = file.getFileName().toString();
         if (!AudioDecoder.supports(name)) {
-            lastError = "Format tidak didukung: " + name;
-            return false;
+            throw new IOException("Format tidak didukung: " + name);
         }
+        AudioDecoder.Pcm pcm = AudioDecoder.decode(file);
+        if (pcm.samples().length == 0 || pcm.channels() < 1 || pcm.sampleRate() < 1) {
+            throw new IOException("File kosong atau tidak bisa dibaca");
+        }
+        ByteBuffer data = ByteBuffer.allocateDirect(pcm.samples().length * 2).order(ByteOrder.nativeOrder());
+        data.asShortBuffer().put(pcm.samples());
+        int format = pcm.channels() == 1 ? AL10.AL_FORMAT_MONO16 : AL10.AL_FORMAT_STEREO16;
+        long duration = pcm.samples().length * 1000L / ((long) pcm.channels() * pcm.sampleRate());
+        return new Prepared(data, format, pcm.sampleRate(), duration);
+    }
+
+    /** Menyerahkan lagu yang sudah disiapkan ke OpenAL. Hanya dari thread game, dan cepat. */
+    public boolean attach(Prepared p) {
+        close();
+        lastError = null;
         if (ALC10.alcGetCurrentContext() == 0L) {
             lastError = "Sistem suara belum siap";
             return false;
         }
         try {
-            AudioDecoder.Pcm pcm = AudioDecoder.decode(file);
-            if (pcm.samples().length == 0 || pcm.channels() < 1 || pcm.sampleRate() < 1) {
-                lastError = "File kosong atau tidak bisa dibaca";
-                return false;
-            }
             ensureSource();
-
             buffer = AL10.alGenBuffers();
             checkError("alGenBuffers");
-            ByteBuffer data = ByteBuffer.allocateDirect(pcm.samples().length * 2)
-                    .order(ByteOrder.nativeOrder());
-            data.asShortBuffer().put(pcm.samples());
-            int format = pcm.channels() == 1 ? AL10.AL_FORMAT_MONO16 : AL10.AL_FORMAT_STEREO16;
-            AL10.alBufferData(buffer, format, data, pcm.sampleRate());
+            AL10.alBufferData(buffer, p.format(), p.data(), p.rate());
             checkError("alBufferData");
-
             AL10.alSourcei(source, AL10.AL_BUFFER, buffer);
             checkError("alSourcei");
             AL10.alSourcef(source, AL10.AL_GAIN, volume);
-
-            durationMs = pcm.samples().length * 1000L / ((long) pcm.channels() * pcm.sampleRate());
+            durationMs = p.durationMs();
             loaded = true;
             return true;
-        } catch (IOException | RuntimeException e) {
+        } catch (RuntimeException e) {
             lastError = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             close();
+            return false;
+        }
+    }
+
+    /** Memuat langsung di thread ini (lambat untuk lagu panjang). Pemutaran biasa memakai prepare + attach. */
+    public boolean load(Path file) {
+        try {
+            return attach(prepare(file));
+        } catch (IOException e) {
+            lastError = e.getMessage();
             return false;
         }
     }

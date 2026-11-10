@@ -46,9 +46,10 @@ Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manua
 
 ## Tambah lagu langsung dari game
 
-1. Tekan **Right Shift**, lalu tekan **Daftar lagu**.
-2. Ketik path folder atau file lagu di kotak bawah. Contoh: `/storage/emulated/0/Music`
-3. Tekan **Tambah**. Lagu langsung masuk ke daftar tanpa restart Minecraft.
+1. Tekan **F6** (atau Right Shift, lalu **Daftar lagu**). Tidak perlu membuka pengaturan dulu.
+2. Daftar lagu bisa digeser dengan jari, dan ada kotak **cari** di atas. Ketuk satu lagu untuk memutar.
+3. Untuk menambah lagu, ketik path folder atau file lagu di kotak bawah. Contoh: `/storage/emulated/0/Music`
+4. Tekan **Tambah**. Lagu langsung masuk ke daftar tanpa restart Minecraft.
 
 Jika path tidak ditemukan atau bukan MP3, OGG, atau WAV, status akan menjelaskan alasannya.
 
@@ -59,8 +60,9 @@ Pop-up di dalam game tidak bisa diklik, jadi tombolnya ada di layar kontrol:
 1. Tekan **F7**, atau tekan Right Shift lalu **Kontrol Dynamic Island**.
 2. Di kartu, ketuk tombol sebelumnya, jeda/putar, dan berikutnya. Ketuk bar progres untuk pindah posisi lagu.
 3. **Berhenti**, **Ulang** (Mati, Semua, Satu), dan **Acak** ada di bawah kartu.
-4. **Ukuran**, **Warna**, **Tampil saat jeda**, dan **Tampilan** (Kartu atau Pil) mengatur bentuk pop-up.
-5. Geser posisinya di menu Right Shift dengan menahan klik kiri pada kotaknya.
+4. Slider **Lebar** dan **Tinggi** mengatur besar kartu (bisa dibuat lebar dan panjang). **Reset ukuran** mengembalikan ke bawaan. **Warna**, **Tampil saat jeda**, dan **Tampilan** (Kartu atau Pil) mengatur bentuk pop-up.
+5. Di menu Right Shift, geser kotak Island dengan jari, dan tarik kotak kecil di pojok kanan bawahnya untuk mengubah ukuran.
+6. Tombol **Daftar lagu** di layar ini membuka daftar lagu langsung.
 
 Tombol putar, berikutnya, sebelumnya, berhenti, dan ulang juga bisa dipasang di **Options → Controls**, kategori X FIVE LIVE. Secara bawaan belum dipasang.
 

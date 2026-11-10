@@ -44,6 +44,7 @@ public final class XFiveScreen extends Screen {
     private String dragKey = null;
     private int dragOffX;
     private int dragOffY;
+    private boolean resizing = false;
     private int dragW;
     private int dragH;
 
@@ -125,7 +126,7 @@ public final class XFiveScreen extends Screen {
                 height - 62, GlassPanelRenderer.MUTED);
 
         GlassPanelRenderer.text(g, font, "Geser kotak HUD dengan mouse", rightX, row(8), GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, "(tahan klik kiri, lalu geser)", rightX, row(8) + 11,
+        GlassPanelRenderer.text(g, font, "Tarik kotak di pojok Island: ubah ukuran", rightX, row(8) + 11,
                 GlassPanelRenderer.MUTED);
 
         drawHud(g, font, mouseX, mouseY);
@@ -159,6 +160,10 @@ public final class XFiveScreen extends Screen {
             int labelY = b[1] >= 12 ? b[1] - 11 : b[1] + b[3] + 3;
             GlassPanelRenderer.text(g, font, it.label(), b[0], labelY,
                     active ? GlassPanelRenderer.WHITE : GlassPanelRenderer.MUTED);
+            if (it.key().equals("dynamicIsland")) {
+                int[] hd = handle(b);
+                g.fill(hd[0], hd[1], hd[0] + HANDLE, hd[1] + HANDLE, GlassPanelRenderer.argb(accent, 1f));
+            }
         }
     }
 
@@ -189,6 +194,20 @@ public final class XFiveScreen extends Screen {
             return true;
         }
         List<Item> items = hudItems();
+        for (Item it : items) {
+            if (it.key().equals("dynamicIsland")) {
+                int[] b = it.box();
+                int[] hd = handle(b);
+                if (event.x() >= hd[0] - 3 && event.x() < hd[0] + HANDLE + 3
+                        && event.y() >= hd[1] - 3 && event.y() < hd[1] + HANDLE + 3) {
+                    int[] pos = XFiveLiveClient.CONFIG.hudPositions.get("dynamicIsland");
+                    pos[0] = b[0]; // pojok kiri atas dikunci supaya kartu membesar ke kanan-bawah
+                    pos[1] = b[1];
+                    resizing = true;
+                    return true;
+                }
+            }
+        }
         for (int i = items.size() - 1; i >= 0; i--) {
             Item it = items.get(i);
             int[] b = it.box();
@@ -206,6 +225,13 @@ public final class XFiveScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (resizing) {
+            XFiveConfig c = XFiveLiveClient.CONFIG;
+            int[] pos = c.hudPositions.get("dynamicIsland");
+            c.islandW = Math.max(140, Math.min(400, (int) event.x() - pos[0]));
+            c.islandH = Math.max(60, Math.min(160, (int) event.y() - pos[1]));
+            return true;
+        }
         if (dragKey == null) {
             return super.mouseDragged(event, dx, dy);
         }
@@ -220,6 +246,11 @@ public final class XFiveScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (resizing) {
+            resizing = false;
+            XFiveLiveClient.CONFIG.save();
+            return true;
+        }
         if (dragKey == null) {
             return super.mouseReleased(event);
         }
@@ -237,6 +268,13 @@ public final class XFiveScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static final int HANDLE = 7;
+
+    /** Pegangan ubah ukuran di pojok kanan bawah kotak: {x, y}. */
+    private static int[] handle(int[] b) {
+        return new int[] {b[0] + b[2] - HANDLE, b[1] + b[3] - HANDLE};
     }
 
     private static boolean inside(int[] b, double x, double y) {

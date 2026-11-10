@@ -19,7 +19,8 @@ public final class XFiveConfig {
     public float hudScale = 1.0f;
     public float hudOpacity = 0.85f;
     public boolean dynamicIsland = true;
-    public int islandSize = 1;          // 0 kecil, 1 sedang, 2 besar
+    public int islandW = 220;           // lebar kartu, 140..400
+    public int islandH = 84;            // tinggi kartu, 60..160
     public int islandColor = 0;         // 0 ikut tema, 1..5 warna tetap
     public boolean islandShowPaused = false;
     public boolean islandCard = true;   // true = kartu lengkap, false = pil kecil
@@ -91,7 +92,8 @@ public final class XFiveConfig {
         hudScale = flt(p, "general.hudScale", hudScale, 0.5f, 2.0f);
         hudOpacity = flt(p, "general.hudOpacity", hudOpacity, 0.1f, 1.0f);
         dynamicIsland = bool(p, "general.dynamicIsland", dynamicIsland);
-        islandSize = integer(p, "island.size", islandSize, 0, 2);
+        islandW = integer(p, "island.width", islandW, 140, 400);
+        islandH = integer(p, "island.height", islandH, 60, 160);
         islandColor = integer(p, "island.color", islandColor, 0, 5);
         islandShowPaused = bool(p, "island.showPaused", islandShowPaused);
         islandCard = bool(p, "island.card", islandCard);
@@ -134,7 +136,8 @@ public final class XFiveConfig {
         put(p, "general.hudScale", hudScale);
         put(p, "general.hudOpacity", hudOpacity);
         put(p, "general.dynamicIsland", dynamicIsland);
-        put(p, "island.size", islandSize);
+        put(p, "island.width", islandW);
+        put(p, "island.height", islandH);
         put(p, "island.color", islandColor);
         put(p, "island.showPaused", islandShowPaused);
         put(p, "island.card", islandCard);

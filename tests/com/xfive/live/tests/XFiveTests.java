@@ -163,7 +163,8 @@ public final class XFiveTests {
         a.theme = "cyan";
         a.musicFolder = "/music";
         a.hudPositions.get("chatHud")[1] = 77;
-        a.islandSize = 2;
+        a.islandW = 300;
+        a.islandH = 100;
         a.islandColor = 3;
         a.islandShowPaused = true;
         a.islandCard = false;
@@ -178,7 +179,7 @@ public final class XFiveTests {
         check("config theme tersimpan", b.theme.equals("cyan"));
         check("config folder tersimpan", b.musicFolder.equals("/music"));
         check("config posisi HUD tersimpan", b.hudPositions.get("chatHud")[1] == 77);
-        check("config ukuran dan warna island tersimpan", b.islandSize == 2 && b.islandColor == 3);
+        check("config ukuran dan warna island tersimpan", b.islandW == 300 && b.islandH == 100 && b.islandColor == 3);
         check("config island jeda, kartu, ulang, acak tersimpan",
                 b.islandShowPaused && !b.islandCard && b.repeatMode == 2 && b.shuffle);
 

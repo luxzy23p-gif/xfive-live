@@ -23,14 +23,11 @@ public final class DynamicIslandHud {
     private static final int BASE_COMPACT_W = 130;
     private static final int BASE_EXPANDED_W = 240;
     private static final int BASE_HEIGHT = 30;
-    private static final int CARD_W = 220;
-    private static final int CARD_H = 84;
+    private static final int CARD_H = 84; // tinggi dasar. Isi kartu mengikuti tinggi yang dipilih.
+    private static final float POP_SECONDS = 1.1f;
     public static final int TOP = 6;
     private static final float SPEED = 4f; // perubahan per detik (0..1)
 
-    /** Pilihan ukuran, dengan faktor skalanya. */
-    public static final String[] SIZE_NAMES = {"Kecil", "Sedang", "Besar"};
-    private static final float[] SIZE_FACTORS = {0.9f, 1f, 1.25f};
     /** Pilihan warna. Indeks 0 mengikuti tema, indeks lain memakai warna tetap. */
     public static final String[] COLOR_NAMES = {"Ikut tema", "Ungu", "Cyan", "Pink", "Hijau", "Kuning"};
     private static final int[] COLORS = {0, 0x965CFF, 0x40DFFF, 0xFF4FD8, 0x5CFF8A, 0xFFD84D};
@@ -38,18 +35,13 @@ public final class DynamicIslandHud {
     private static boolean wasPlaying = false;
     private static PlaylistManager.Track lastTrack = null;
     private static long expandUntil = 0L;
+    private static long popStart = 0L;
 
     private static float visible = 0f; // 0 = hilang, 1 = tampil penuh
     private static float expand = 0f;  // 0 = kompak, 1 = lebar (hanya tampilan pil)
     private static long lastRenderNs = 0L;
 
     private DynamicIslandHud() {
-    }
-
-    /** Faktor skala ukuran yang dipilih di config. */
-    public static float sizeFactor() {
-        int i = XFiveLiveClient.CONFIG.islandSize;
-        return SIZE_FACTORS[Math.max(0, Math.min(SIZE_FACTORS.length - 1, i))];
     }
 
     /** Warna aksen Dynamic Island saat ini. */
@@ -73,8 +65,8 @@ public final class DynamicIslandHud {
 
     /** Kotak kartu lengkap: {x, y, lebar, tinggi}. */
     public static int[] cardBox() {
-        float f = sizeFactor();
-        return place(Math.round(CARD_W * f), Math.round(CARD_H * f));
+        XFiveConfig c = XFiveLiveClient.CONFIG;
+        return place(c.islandW, c.islandH);
     }
 
     /** Kotak Dynamic Island saat ini, sesuai tampilan yang dipilih (kartu atau pil). */
@@ -82,16 +74,21 @@ public final class DynamicIslandHud {
         if (XFiveLiveClient.CONFIG.islandCard) {
             return cardBox();
         }
-        float f = sizeFactor();
-        return place(Math.round(BASE_EXPANDED_W * f), Math.round(BASE_HEIGHT * f));
+        XFiveConfig c = XFiveLiveClient.CONFIG;
+        return place(c.islandW, Math.max(24, Math.round(c.islandH * BASE_HEIGHT / (float) CARD_H)));
     }
 
     /** Dipanggil dari client tick. Hanya membaca status musik, tanpa menggambar. */
     public static void onTick() {
         boolean playing = XFiveLiveClient.MUSIC.isPlaying();
         PlaylistManager.Track track = XFiveLiveClient.MUSIC.currentTrack();
+        boolean loading = XFiveLiveClient.MUSIC.isLoading();
+        boolean changed = track != null && !sameTrack(track, lastTrack) && (playing || loading);
         if (playing && (!wasPlaying || !sameTrack(track, lastTrack))) {
             expandUntil = System.currentTimeMillis() + EXPAND_MS;
+        }
+        if (changed || (playing && !wasPlaying && visible < 0.05f)) {
+            popStart = System.currentTimeMillis(); // pop-up baru dimulai dari kecil
         }
         wasPlaying = playing;
         lastTrack = track;
@@ -102,15 +99,23 @@ public final class DynamicIslandHud {
         float dt = advanceTime();
         boolean failed = XFiveLiveClient.MUSIC.hasError();
         PlaylistManager.Track t = XFiveLiveClient.MUSIC.currentTrack();
-        boolean show = c.enableMusic && (wasPlaying || failed || (c.islandShowPaused && t != null));
+        boolean show = c.enableMusic && (wasPlaying || failed || XFiveLiveClient.MUSIC.isLoading() || (c.islandShowPaused && t != null));
         boolean wide = failed || System.currentTimeMillis() < expandUntil;
-        visible = approach(visible, show ? 1f : 0f, dt * SPEED);
+        visible = approach(visible, show ? 1f : 0f, dt * 2.5f);
         expand = approach(expand, wide ? 1f : 0f, dt * SPEED);
         if (visible <= 0.01f) {
             return;
         }
 
-        float alpha = visible * c.hudOpacity * c.customTransparency;
+        float age = c.animations ? (System.currentTimeMillis() - popStart) / 1000f : 99f;
+        float pt = clamp01(age / POP_SECONDS);
+        float k = 0.6f + 0.4f * easeOutBack(pt);       // tumbuh pelan dari 60% dengan sedikit memantul
+        float fade = clamp01(age / 0.6f);
+        float textT = clamp01((age - 0.35f) / 0.5f);   // teks menyusul setelah kartu hampir penuh
+        if (age >= POP_SECONDS) {
+            k = 1f;
+        }
+        float alpha = visible * fade * c.hudOpacity * c.customTransparency;
         int[] b = box();
         String title;
         String sub;
@@ -130,11 +135,15 @@ public final class DynamicIslandHud {
         Font font = GlassPanelRenderer.font();
 
         if (c.islandCard) {
-            drawCard(g, font, b[0], b[1], b[2], b[3], title, sub, progress, pos, dur, wasPlaying,
-                    accentColor(), alpha);
+            int w = Math.max(40, Math.round(b[2] * k));
+            int h = Math.max(30, Math.round(b[3] * k));
+            int x = b[0] + (b[2] - w) / 2;
+            int y = b[1] + (b[3] - h) / 2 - Math.round((1f - pt) * 12f); // meluncur turun pelan
+            drawCard(g, font, x, y, w, h, title, sub, progress, pos, dur, wasPlaying,
+                    accentColor(), alpha, textT);
             return;
         }
-        int compactW = Math.round(BASE_COMPACT_W * sizeFactor());
+        int compactW = Math.round(BASE_COMPACT_W * c.islandW / 220f);
         // Pil kompak dipusatkan di dalam kotak lebar, supaya tetap di tengah saat melebar.
         int w = Math.round(compactW + (b[2] - compactW) * expand);
         int x = b[0] + (b[2] - w) / 2;
@@ -143,10 +152,18 @@ public final class DynamicIslandHud {
 
     // ---- Tampilan kartu ----
 
-    /** Menggambar kartu lengkap. Ukuran isi mengikuti tinggi h (84 = ukuran dasar). */
+    /** Kartu tanpa animasi teks (dipakai layar kontrol). */
     public static void drawCard(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h,
                                 String title, String artist, float progress, long posMs, long durMs,
                                 boolean playing, int accent, float alpha) {
+        drawCard(g, font, x, y, w, h, title, artist, progress, posMs, durMs, playing, accent, alpha, 1f);
+    }
+
+    /** Menggambar kartu lengkap. Isi mengikuti tinggi h (84 = dasar). textT 0..1 mengatur munculnya teks. */
+    public static void drawCard(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h,
+                                String title, String artist, float progress, long posMs, long durMs,
+                                boolean playing, int accent, float alpha, float textT) {
+        int dy = Math.round((1f - textT) * 6f);
         float s = h / (float) CARD_H;
         roundRect(g, x - 1, y - 1, w + 2, h + 2, u(13, s), GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.2f * alpha));
         roundRect(g, x, y, w, h, u(12, s), GlassPanelRenderer.argb(GlassPanelRenderer.BACKGROUND, alpha));
@@ -166,8 +183,10 @@ public final class DynamicIslandHud {
         // judul dan artis
         int tx = ax + art + u(10, s);
         int maxW = x + w - u(38, s) - tx;
-        GlassPanelRenderer.text(g, font, fit(font, title, maxW), tx, y + u(13, s), GlassPanelRenderer.WHITE);
-        GlassPanelRenderer.text(g, font, fit(font, artist, maxW), tx, y + u(26, s), GlassPanelRenderer.MUTED);
+        if (textT > 0f) {
+            GlassPanelRenderer.text(g, font, fit(font, title, maxW), tx, y + u(13, s) + dy, GlassPanelRenderer.WHITE);
+            GlassPanelRenderer.text(g, font, fit(font, artist, maxW), tx, y + u(26, s) + dy, GlassPanelRenderer.MUTED);
+        }
 
         // gelombang suara kecil di kanan atas, bergerak saat musik berputar
         double t = System.nanoTime() / 1_000_000_000.0;
@@ -193,8 +212,10 @@ public final class DynamicIslandHud {
         // waktu
         String left = formatTime(posMs);
         String right = formatTime(durMs);
-        GlassPanelRenderer.text(g, font, left, bx1, y + u(60, s), GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, right, bx2 - font.width(right), y + u(60, s), GlassPanelRenderer.MUTED);
+        if (textT > 0f) {
+            GlassPanelRenderer.text(g, font, left, bx1, y + u(60, s) + dy, GlassPanelRenderer.MUTED);
+            GlassPanelRenderer.text(g, font, right, bx2 - font.width(right), y + u(60, s) + dy, GlassPanelRenderer.MUTED);
+        }
 
         // tombol sebelumnya, jeda/putar, berikutnya
         int cy = y + h - u(13, s);
@@ -344,6 +365,17 @@ public final class DynamicIslandHud {
             return a == b;
         }
         return a.path().equals(b.path());
+    }
+
+    private static float clamp01(float v) {
+        return Math.max(0f, Math.min(1f, v));
+    }
+
+    private static float easeOutBack(float t) {
+        float c1 = 1.2f;
+        float c3 = c1 + 1f;
+        float u = t - 1f;
+        return 1f + c3 * u * u * u + c1 * u * u;
     }
 
     private static float approach(float current, float target, float step) {

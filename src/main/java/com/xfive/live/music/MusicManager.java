@@ -1,7 +1,12 @@
 package com.xfive.live.music;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Menggabungkan playlist dan pemutar: putar, jeda, berhenti, berikutnya, sebelumnya,
@@ -22,6 +27,15 @@ public final class MusicManager {
     private boolean error = false;
     private int repeatMode = REPEAT_ALL;
     private boolean shuffle = false;
+
+    /** Dekode lagu berjalan di thread ini supaya game tidak tersendat saat pindah lagu. */
+    private final ExecutorService loader = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "xfive-audio-loader");
+        t.setDaemon(true);
+        return t;
+    });
+    private CompletableFuture<AudioPlayer.Prepared> loading;
+    private PlaylistManager.Track loadingTrack;
 
     public int setFolder(Path dir) {
         player.stop();
@@ -53,13 +67,9 @@ public final class MusicManager {
             return false;
         }
         if (loadedTrack == null || !loadedTrack.path().equals(track.path())) {
-            if (!player.load(track.path())) {
-                status = "Gagal: " + player.lastError();
-                error = true;
-                loadedTrack = null;
-                return false;
-            }
-            loadedTrack = track;
+            // Lagu baru didekode di thread latar. Pemutaran dimulai otomatis oleh tick() saat siap.
+            requestLoad(track);
+            return true;
         }
         player.setVolume(player.volume());
         player.play();
@@ -87,13 +97,16 @@ public final class MusicManager {
             }
         }
         // Status dari pemutaran (Memutar, Dijeda, Berhenti) tidak ditimpa saat menu dibuka.
-        if (loadedTrack == null && !error) {
+        if (loadedTrack == null && loading == null && !error) {
             status = n == 0 ? "Belum ada lagu. Isi folder xfive-music." : n + " lagu";
         }
         return n;
     }
 
     public void togglePause() {
+        if (loading != null) {
+            return; // lagu sedang dimuat
+        }
         if (player.isPlaying()) {
             player.pause();
             status = "Dijeda";
@@ -155,6 +168,10 @@ public final class MusicManager {
 
     /** Dipanggil dari client tick. Mengurus lagu yang sudah habis sesuai mode ulang. */
     public void tick() {
+        if (loading != null) {
+            finishLoad();
+            return;
+        }
         if (!player.isFinished()) {
             return;
         }
@@ -170,6 +187,63 @@ public final class MusicManager {
             return;
         }
         next();
+    }
+
+    /** Menghentikan lagu lama lalu mulai mendekode lagu baru di thread latar. */
+    private void requestLoad(PlaylistManager.Track track) {
+        player.stop();
+        loadedTrack = null;
+        loadingTrack = track;
+        status = "Memuat...";
+        error = false;
+        Path file = track.path();
+        loading = CompletableFuture.supplyAsync(() -> {
+            try {
+                return AudioPlayer.prepare(file);
+            } catch (IOException | RuntimeException | OutOfMemoryError e) {
+                throw new CompletionException(e);
+            }
+        }, loader);
+    }
+
+    /** Dipanggil dari tick. Jika dekode selesai, serahkan ke OpenAL (cepat) lalu putar. */
+    private void finishLoad() {
+        CompletableFuture<AudioPlayer.Prepared> f = loading;
+        if (f == null || !f.isDone()) {
+            return;
+        }
+        loading = null;
+        PlaylistManager.Track track = loadingTrack;
+        try {
+            AudioPlayer.Prepared prepared = f.join();
+            if (!player.attach(prepared)) {
+                status = "Gagal: " + player.lastError();
+                error = true;
+                loadedTrack = null;
+                return;
+            }
+            loadedTrack = track;
+            player.setVolume(player.volume());
+            player.play();
+            if (player.isPlaying()) {
+                error = false;
+                status = "Memutar";
+            } else {
+                status = "Gagal mulai: " + player.debugState();
+                error = true;
+            }
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            String msg = cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+            status = "Gagal: " + msg;
+            error = true;
+            loadedTrack = null;
+        }
+    }
+
+    /** True selama lagu baru masih didekode di thread latar. */
+    public boolean isLoading() {
+        return loading != null;
     }
 
     public int repeatMode() {
@@ -233,6 +307,7 @@ public final class MusicManager {
     }
 
     public void shutdown() {
+        loader.shutdownNow();
         player.close();
     }
 }
