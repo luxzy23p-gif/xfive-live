@@ -40,6 +40,7 @@ public final class DynamicIslandHud {
     private static float visible = 0f; // 0 = hilang, 1 = tampil penuh
     private static float expand = 0f;  // 0 = kompak, 1 = lebar (hanya tampilan pil)
     private static long lastRenderNs = 0L;
+    private static boolean lastShowTarget = false;
 
     private DynamicIslandHud() {
     }
@@ -87,9 +88,13 @@ public final class DynamicIslandHud {
         if (playing && (!wasPlaying || !sameTrack(track, lastTrack))) {
             expandUntil = System.currentTimeMillis() + EXPAND_MS;
         }
-        if (changed || (playing && !wasPlaying && visible < 0.05f)) {
-            popStart = System.currentTimeMillis(); // pop-up baru dimulai dari kecil
+        boolean showTarget = XFiveLiveClient.CONFIG.enableMusic
+                && (playing || XFiveLiveClient.MUSIC.hasError() || loading
+                || (XFiveLiveClient.CONFIG.islandShowPaused && track != null));
+        if (changed || (showTarget && !lastShowTarget)) {
+            popStart = System.currentTimeMillis();
         }
+        lastShowTarget = showTarget;
         wasPlaying = playing;
         lastTrack = track;
     }
@@ -101,16 +106,19 @@ public final class DynamicIslandHud {
         PlaylistManager.Track t = XFiveLiveClient.MUSIC.currentTrack();
         boolean show = c.enableMusic && (wasPlaying || failed || XFiveLiveClient.MUSIC.isLoading() || (c.islandShowPaused && t != null));
         boolean wide = failed || System.currentTimeMillis() < expandUntil;
-        visible = approach(visible, show ? 1f : 0f, dt * 2.5f);
-        expand = approach(expand, wide ? 1f : 0f, dt * SPEED);
+        // Frame-rate-independent smoothing prevents visible jumps when FPS fluctuates.
+        // Clamp long pauses (screen changes / lag spikes) so animation never snaps abruptly.
+        float smoothDt = Math.min(dt, 0.05f);
+        visible = smoothApproach(visible, show ? 1f : 0f, smoothDt, 9.0f);
+        expand = smoothApproach(expand, wide ? 1f : 0f, smoothDt, SPEED * 2.2f);
         if (visible <= 0.01f) {
             return;
         }
 
         float age = c.animations ? (System.currentTimeMillis() - popStart) / 1000f : 99f;
         float pt = clamp01(age / POP_SECONDS);
-        float k = 0.6f + 0.4f * easeOutBack(pt);       // tumbuh pelan dari 60% dengan sedikit memantul
-        float fade = clamp01(age / 0.6f);
+        float k = 0.72f + 0.28f * easeOutCubic(pt);    // scale halus tanpa overshoot yang memicu jitter
+        float fade = easeOutCubic(clamp01(age / 0.42f));
         float textT = clamp01((age - 0.35f) / 0.5f);   // teks menyusul setelah kartu hampir penuh
         if (age >= POP_SECONDS) {
             k = 1f;
@@ -371,18 +379,16 @@ public final class DynamicIslandHud {
         return Math.max(0f, Math.min(1f, v));
     }
 
-    private static float easeOutBack(float t) {
-        float c1 = 1.2f;
-        float c3 = c1 + 1f;
-        float u = t - 1f;
-        return 1f + c3 * u * u * u + c1 * u * u;
+    private static float easeOutCubic(float t) {
+        float u = 1f - clamp01(t);
+        return 1f - u * u * u;
     }
 
-    private static float approach(float current, float target, float step) {
-        if (current < target) {
-            return Math.min(target, current + step);
-        }
-        return Math.max(target, current - step);
+    /** Exponential interpolation: stable at both low and high frame rates. */
+    private static float smoothApproach(float current, float target, float dt, float response) {
+        float blend = 1f - (float) Math.exp(-Math.max(0f, dt) * response);
+        float next = current + (target - current) * blend;
+        return Math.abs(target - next) < 0.001f ? target : next;
     }
 
     private static float advanceTime() {
