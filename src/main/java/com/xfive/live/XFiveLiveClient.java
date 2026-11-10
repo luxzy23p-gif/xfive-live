@@ -59,13 +59,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
     private static KeyMapping lyricsKey;
     private static KeyMapping chatKey;
     private static KeyMapping settingsKey;
-    private static KeyMapping controlsKey;
-    private static KeyMapping listKey;
-    private static KeyMapping playKey;
-    private static KeyMapping nextKey;
-    private static KeyMapping prevKey;
-    private static KeyMapping stopKey;
-    private static KeyMapping repeatKey;
+    private static KeyMapping musicCenterKey;
     private static PlaylistManager.Track lastTrack;
     private static boolean autoResumeDone = false;
 
@@ -87,14 +81,8 @@ public final class XFiveLiveClient implements ClientModInitializer {
         lyricsKey = register("key.xfive.lyrics", GLFW.GLFW_KEY_F9, category);
         chatKey = register("key.xfive.chat", GLFW.GLFW_KEY_F10, category);
         settingsKey = register("key.xfive.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, category);
-        controlsKey = register("key.xfive.controls", GLFW.GLFW_KEY_F7, category);
-        listKey = register("key.xfive.list", GLFW.GLFW_KEY_F6, category);
-        // Tombol musik ini belum dipasang secara bawaan. Pasang lewat Options > Controls.
-        playKey = register("key.xfive.play", GLFW.GLFW_KEY_UNKNOWN, category);
-        nextKey = register("key.xfive.next", GLFW.GLFW_KEY_UNKNOWN, category);
-        prevKey = register("key.xfive.prev", GLFW.GLFW_KEY_UNKNOWN, category);
-        stopKey = register("key.xfive.stop", GLFW.GLFW_KEY_UNKNOWN, category);
-        repeatKey = register("key.xfive.repeat", GLFW.GLFW_KEY_UNKNOWN, category);
+        // Satu pintasan terpadu: buka daftar lagu, pemutar, dan pengaturan audio sekaligus.
+        musicCenterKey = register("key.xfive.music_center", GLFW.GLFW_KEY_F6, category);
 
         HudElementRegistry.attachElementBefore(
                 VanillaHudElements.CHAT,
@@ -281,26 +269,8 @@ public final class XFiveLiveClient implements ClientModInitializer {
             CONFIG.save();
         }
 
-        while (controlsKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new MusicControlScreen(null));
-        }
-        while (listKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new SongListScreen(null));
-        }
-        while (playKey.consumeClick()) {
-            MUSIC.togglePause();
-        }
-        while (nextKey.consumeClick()) {
-            MUSIC.next();
-        }
-        while (prevKey.consumeClick()) {
-            MUSIC.previous();
-        }
-        while (stopKey.consumeClick()) {
-            MUSIC.stop();
-        }
-        while (repeatKey.consumeClick()) {
-            cycleRepeat();
+        while (musicCenterKey.consumeClick()) {
+            Minecraft.getInstance().setScreenAndShow(ControlCenterScreen.audio());
         }
 
         CHAT.update(System.currentTimeMillis());
