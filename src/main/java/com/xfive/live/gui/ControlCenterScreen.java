@@ -345,7 +345,7 @@ public final class ControlCenterScreen extends Screen {
         float progress = duration > 0L ? Math.max(0f, Math.min(1f, (float) position / duration)) : 0f;
         int seekX = contentX() + 10;
         int seekW = Math.max(1, contentW() - 20);
-        int seekY = playerY + 53;
+        int seekY = playerY + 48;
         int trackColor = GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.24f);
         int fillColor = GlassPanelRenderer.argb(accent, 0.96f);
         g.fill(seekX, seekY, seekX + seekW, seekY + 3, trackColor);
@@ -355,8 +355,8 @@ public final class ControlCenterScreen extends Screen {
         g.fill(knobX - 2, seekY - 2, knobX + 3, seekY + 5, GlassPanelRenderer.WHITE);
         String elapsed = formatTime(position);
         String totalTime = formatTime(duration);
-        GlassPanelRenderer.text(g, font, elapsed, seekX, playerY + 39, GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, totalTime, seekX + seekW - font.width(totalTime), playerY + 39, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, elapsed, seekX, playerY + 54, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, totalTime, seekX + seekW - font.width(totalTime), playerY + 54, GlassPanelRenderer.MUTED);
     }
 
     @Override
