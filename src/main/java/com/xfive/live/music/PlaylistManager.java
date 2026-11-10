@@ -51,16 +51,58 @@ public final class PlaylistManager {
         return tracks.size();
     }
 
-    static Track parse(Path file) {
+    /** Membaca artis dan judul dari nama file, misalnya "Adele - Hello.mp3". */
+    public static Track parse(Path file) {
         String name = file.getFileName().toString();
         int dot = name.lastIndexOf('.');
         String base = dot > 0 ? name.substring(0, dot) : name;
-        int sep = base.indexOf(" - ");
+        String clean = cleanName(base);
+        int sep = clean.indexOf(" - ");
         if (sep > 0) {
-            return new Track(file, base.substring(sep + 3).strip(), base.substring(0, sep).strip());
+            return new Track(file, clean.substring(sep + 3).strip(), clean.substring(0, sep).strip());
         }
-        return new Track(file, base.strip(), "Unknown Artist");
+        return new Track(file, clean, "Unknown Artist");
     }
+
+    /**
+     * Nama hasil unduhan sering memakai "_" sebagai pengganti spasi, dan "–" sebagai pengganti "-".
+     * Keduanya dirapikan, lalu tag di ujung nama seperti "(1280)" atau "(Official Video)" dibuang.
+     */
+    static String cleanName(String base) {
+        String s = base.replace('_', ' ').replace('–', '-');
+        s = s.replaceAll("\\s+", " ").strip();
+        s = stripTrailingTags(s);
+        return s.isEmpty() ? base.strip() : s;
+    }
+
+    private static String stripTrailingTags(String text) {
+        String s = text;
+        while (s.endsWith(")") || s.endsWith("]")) {
+            int open = Math.max(s.lastIndexOf('('), s.lastIndexOf('['));
+            if (open <= 0) {
+                break;
+            }
+            String inside = s.substring(open + 1, s.length() - 1).strip().toLowerCase(Locale.ROOT);
+            if (!isTagWord(inside)) {
+                break;
+            }
+            s = s.substring(0, open).strip();
+        }
+        return s;
+    }
+
+    private static boolean isTagWord(String inside) {
+        for (String word : TAG_WORDS) {
+            if (inside.contains(word)) {
+                return true;
+            }
+        }
+        return inside.matches("\\d{3,4}p?");
+    }
+
+    /** Kata yang menandakan tag rilis di ujung nama file, bukan bagian dari judul. */
+    private static final List<String> TAG_WORDS = List.of(
+            "official", "lyric", "video", "audio", "visual", "remaster", "4k", "hq", "hd");
 
     /**
      * Memindai beberapa sumber sekaligus. Setiap sumber bisa berupa folder (semua lagu di dalamnya)

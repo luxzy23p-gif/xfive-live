@@ -19,6 +19,10 @@ public final class XFiveConfig {
     public float hudScale = 1.0f;
     public float hudOpacity = 0.85f;
     public boolean dynamicIsland = true;
+    public int islandSize = 1;          // 0 kecil, 1 sedang, 2 besar
+    public int islandColor = 0;         // 0 ikut tema, 1..5 warna tetap
+    public boolean islandShowPaused = false;
+    public boolean islandCard = true;   // true = kartu lengkap, false = pil kecil
 
     // Music
     public boolean enableMusic = true;
@@ -26,6 +30,8 @@ public final class XFiveConfig {
     public boolean autoResume = false;
     public boolean showArtwork = true;
     public String musicFolder = "";
+    public int repeatMode = 1;          // 0 mati, 1 semua, 2 satu
+    public boolean shuffle = false;
 
     // Lyrics
     public boolean enableLyrics = true;
@@ -85,12 +91,18 @@ public final class XFiveConfig {
         hudScale = flt(p, "general.hudScale", hudScale, 0.5f, 2.0f);
         hudOpacity = flt(p, "general.hudOpacity", hudOpacity, 0.1f, 1.0f);
         dynamicIsland = bool(p, "general.dynamicIsland", dynamicIsland);
+        islandSize = integer(p, "island.size", islandSize, 0, 2);
+        islandColor = integer(p, "island.color", islandColor, 0, 5);
+        islandShowPaused = bool(p, "island.showPaused", islandShowPaused);
+        islandCard = bool(p, "island.card", islandCard);
 
         enableMusic = bool(p, "music.enable", enableMusic);
         defaultVolume = flt(p, "music.defaultVolume", defaultVolume, 0f, 1f);
         autoResume = bool(p, "music.autoResume", autoResume);
         showArtwork = bool(p, "music.showArtwork", showArtwork);
         musicFolder = p.getProperty("music.folder", musicFolder);
+        repeatMode = integer(p, "music.repeat", repeatMode, 0, 2);
+        shuffle = bool(p, "music.shuffle", shuffle);
 
         enableLyrics = bool(p, "lyrics.enable", enableLyrics);
         lyricsFontSize = integer(p, "lyrics.fontSize", lyricsFontSize, 6, 20);
@@ -122,12 +134,18 @@ public final class XFiveConfig {
         put(p, "general.hudScale", hudScale);
         put(p, "general.hudOpacity", hudOpacity);
         put(p, "general.dynamicIsland", dynamicIsland);
+        put(p, "island.size", islandSize);
+        put(p, "island.color", islandColor);
+        put(p, "island.showPaused", islandShowPaused);
+        put(p, "island.card", islandCard);
 
         put(p, "music.enable", enableMusic);
         put(p, "music.defaultVolume", defaultVolume);
         put(p, "music.autoResume", autoResume);
         put(p, "music.showArtwork", showArtwork);
         put(p, "music.folder", musicFolder);
+        put(p, "music.repeat", repeatMode);
+        put(p, "music.shuffle", shuffle);
 
         put(p, "lyrics.enable", enableLyrics);
         put(p, "lyrics.fontSize", lyricsFontSize);

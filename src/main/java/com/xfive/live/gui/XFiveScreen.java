@@ -88,6 +88,8 @@ public final class XFiveScreen extends Screen {
                 () -> XFiveLiveClient.refreshMusic()));
         addRenderableWidget(plain(rightX, row(r++), BTN_W, "Daftar lagu",
                 () -> Minecraft.getInstance().setScreenAndShow(new SongListScreen(this))));
+        addRenderableWidget(plain(rightX, row(r++), BTN_W, "Kontrol Dynamic Island",
+                () -> Minecraft.getInstance().setScreenAndShow(new MusicControlScreen(this))));
         addRenderableWidget(labelled(rightX, row(r++), BTN_W,
                 () -> "Posisi lirik: " + LYRICS_POS[c.lyricsPosition],
                 () -> {

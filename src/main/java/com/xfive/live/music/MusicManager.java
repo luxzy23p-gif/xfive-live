@@ -1,17 +1,27 @@
 package com.xfive.live.music;
 
 import java.nio.file.Path;
+import java.util.Random;
 
-/** Menggabungkan playlist dan pemutar: play, pause, next, previous, volume, dan auto-next. */
+/**
+ * Menggabungkan playlist dan pemutar: putar, jeda, berhenti, berikutnya, sebelumnya,
+ * mode ulang (mati, semua, satu), acak, dan volume.
+ */
 public final class MusicManager {
+    public static final int REPEAT_OFF = 0;
+    public static final int REPEAT_ALL = 1;
+    public static final int REPEAT_ONE = 2;
     private static final long RESTART_THRESHOLD_MS = 3_000L;
 
     private final PlaylistManager playlist = new PlaylistManager();
     private final AudioPlayer player = new AudioPlayer();
+    private final Random random = new Random();
     private Path folder;
     private String status = "Belum ada musik";
     private PlaylistManager.Track loadedTrack;
     private boolean error = false;
+    private int repeatMode = REPEAT_ALL;
+    private boolean shuffle = false;
 
     public int setFolder(Path dir) {
         player.stop();
@@ -76,7 +86,8 @@ public final class MusicManager {
                 }
             }
         }
-        if (!player.isPlaying() && !error) {
+        // Status dari pemutaran (Memutar, Dijeda, Berhenti) tidak ditimpa saat menu dibuka.
+        if (loadedTrack == null && !error) {
             status = n == 0 ? "Belum ada lagu. Isi folder xfive-music." : n + " lagu";
         }
         return n;
@@ -94,8 +105,26 @@ public final class MusicManager {
         }
     }
 
+    /** Menghentikan lagu dan mengembalikan posisi ke awal. Putar lagi akan mulai dari awal. */
+    public void stop() {
+        player.stop();
+        if (playlist.current() != null) {
+            status = "Berhenti";
+        }
+    }
+
     public void next() {
-        playlist.next();
+        int size = playlist.size();
+        if (shuffle && size > 1) {
+            int current = playlist.currentIndex();
+            int pick;
+            do {
+                pick = random.nextInt(size);
+            } while (pick == current);
+            playlist.select(pick);
+        } else {
+            playlist.next();
+        }
         playCurrent();
     }
 
@@ -108,6 +137,14 @@ public final class MusicManager {
         }
     }
 
+    /** Pindah ke posisi tertentu di lagu, dengan fraction 0..1. */
+    public void seekTo(float fraction) {
+        long dur = player.durationMs();
+        if (dur > 0) {
+            player.seekMs((long) (Math.max(0f, Math.min(1f, fraction)) * dur));
+        }
+    }
+
     public void setVolume(float volume) {
         player.setVolume(volume);
     }
@@ -116,11 +153,54 @@ public final class MusicManager {
         return player.volume();
     }
 
-    /** Dipanggil dari client tick. Pindah ke lagu berikutnya saat lagu habis. */
+    /** Dipanggil dari client tick. Mengurus lagu yang sudah habis sesuai mode ulang. */
     public void tick() {
-        if (player.isFinished()) {
-            next();
+        if (!player.isFinished()) {
+            return;
         }
+        if (repeatMode == REPEAT_ONE && loadedTrack != null) {
+            player.stop();
+            playCurrent();
+            return;
+        }
+        boolean lastTrack = playlist.currentIndex() >= playlist.size() - 1;
+        if (repeatMode == REPEAT_OFF && !shuffle && lastTrack) {
+            player.stop();
+            status = "Selesai";
+            return;
+        }
+        next();
+    }
+
+    public int repeatMode() {
+        return repeatMode;
+    }
+
+    public void setRepeatMode(int mode) {
+        repeatMode = Math.max(REPEAT_OFF, Math.min(REPEAT_ONE, mode));
+    }
+
+    /** Pindah ke mode ulang berikutnya: mati, semua, satu, lalu mati lagi. */
+    public int cycleRepeat() {
+        repeatMode = (repeatMode + 1) % 3;
+        return repeatMode;
+    }
+
+    public boolean shuffle() {
+        return shuffle;
+    }
+
+    public void setShuffle(boolean on) {
+        shuffle = on;
+    }
+
+    public boolean toggleShuffle() {
+        shuffle = !shuffle;
+        return shuffle;
+    }
+
+    public void setStatus(String text) {
+        status = text;
     }
 
     public PlaylistManager.Track currentTrack() {

@@ -44,6 +44,26 @@ Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manua
 5. Tekan **Lagu berikutnya** atau **Lagu sebelumnya** untuk pindah lagu.
 6. Tekan **Tutup** untuk keluar dari menu. Pengaturan akan tersimpan otomatis.
 
+## Tambah lagu langsung dari game
+
+1. Tekan **Right Shift**, lalu tekan **Daftar lagu**.
+2. Ketik path folder atau file lagu di kotak bawah. Contoh: `/storage/emulated/0/Music`
+3. Tekan **Tambah**. Lagu langsung masuk ke daftar tanpa restart Minecraft.
+
+Jika path tidak ditemukan atau bukan MP3, OGG, atau WAV, status akan menjelaskan alasannya.
+
+## Kontrol Dynamic Island
+
+Pop-up di dalam game tidak bisa diklik, jadi tombolnya ada di layar kontrol:
+
+1. Tekan **F7**, atau tekan Right Shift lalu **Kontrol Dynamic Island**.
+2. Di kartu, ketuk tombol sebelumnya, jeda/putar, dan berikutnya. Ketuk bar progres untuk pindah posisi lagu.
+3. **Berhenti**, **Ulang** (Mati, Semua, Satu), dan **Acak** ada di bawah kartu.
+4. **Ukuran**, **Warna**, **Tampil saat jeda**, dan **Tampilan** (Kartu atau Pil) mengatur bentuk pop-up.
+5. Geser posisinya di menu Right Shift dengan menahan klik kiri pada kotaknya.
+
+Tombol putar, berikutnya, sebelumnya, berhenti, dan ulang juga bisa dipasang di **Options → Controls**, kategori X FIVE LIVE. Secara bawaan belum dipasang.
+
 ## Opsional: lagu dari folder lain
 
 Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
@@ -85,5 +105,5 @@ Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawa
 ## Batasan saat ini
 
 - Tidak ada koneksi ke Spotify atau YouTube. Musik hanya berasal dari file di HP.
-- Tombol musik ada di menu (Right Shift), belum ada di HUD.
+- Tombol kontrol ada di layar F7 atau menu Right Shift, karena HUD di dalam game tidak bisa diklik.
 - Pemutaran di Android belum diuji langsung di perangkat. Kalau tidak berbunyi, kirim status yang muncul di menu.

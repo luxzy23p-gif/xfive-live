@@ -3,6 +3,7 @@ package com.xfive.live;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
+import com.xfive.live.gui.MusicControlScreen;
 import com.xfive.live.gui.XFiveScreen;
 import com.xfive.live.hud.DynamicIslandHud;
 import com.xfive.live.hud.LiveChatHud;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +58,12 @@ public final class XFiveLiveClient implements ClientModInitializer {
     private static KeyMapping lyricsKey;
     private static KeyMapping chatKey;
     private static KeyMapping settingsKey;
+    private static KeyMapping controlsKey;
+    private static KeyMapping playKey;
+    private static KeyMapping nextKey;
+    private static KeyMapping prevKey;
+    private static KeyMapping stopKey;
+    private static KeyMapping repeatKey;
     private static PlaylistManager.Track lastTrack;
     private static boolean autoResumeDone = false;
 
@@ -65,6 +73,8 @@ public final class XFiveLiveClient implements ClientModInitializer {
         reloadMusic();
         ensureLyricsFolder();
         MUSIC.setVolume(CONFIG.defaultVolume);
+        MUSIC.setRepeatMode(CONFIG.repeatMode);
+        MUSIC.setShuffle(CONFIG.shuffle);
         CHAT.setMaxMessages(CONFIG.maxMessages);
         CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
         CHAT.setIntervalMs(CONFIG.messageSpeedMs);
@@ -75,6 +85,13 @@ public final class XFiveLiveClient implements ClientModInitializer {
         lyricsKey = register("key.xfive.lyrics", GLFW.GLFW_KEY_F9, category);
         chatKey = register("key.xfive.chat", GLFW.GLFW_KEY_F10, category);
         settingsKey = register("key.xfive.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, category);
+        controlsKey = register("key.xfive.controls", GLFW.GLFW_KEY_F7, category);
+        // Tombol musik ini belum dipasang secara bawaan. Pasang lewat Options > Controls.
+        playKey = register("key.xfive.play", GLFW.GLFW_KEY_UNKNOWN, category);
+        nextKey = register("key.xfive.next", GLFW.GLFW_KEY_UNKNOWN, category);
+        prevKey = register("key.xfive.prev", GLFW.GLFW_KEY_UNKNOWN, category);
+        stopKey = register("key.xfive.stop", GLFW.GLFW_KEY_UNKNOWN, category);
+        repeatKey = register("key.xfive.repeat", GLFW.GLFW_KEY_UNKNOWN, category);
 
         HudElementRegistry.attachElementBefore(
                 VanillaHudElements.CHAT,
@@ -161,6 +178,82 @@ public final class XFiveLiveClient implements ClientModInitializer {
         return MUSIC.refresh(musicSources(folder));
     }
 
+    /** Mode ulang berikutnya (mati, semua, satu), disimpan ke config. */
+    public static void cycleRepeat() {
+        CONFIG.repeatMode = MUSIC.cycleRepeat();
+        CONFIG.save();
+    }
+
+    public static void toggleShuffle() {
+        CONFIG.shuffle = MUSIC.toggleShuffle();
+        CONFIG.save();
+    }
+
+    public static void cycleIslandSize() {
+        CONFIG.islandSize = (CONFIG.islandSize + 1) % DynamicIslandHud.SIZE_NAMES.length;
+        CONFIG.save();
+    }
+
+    public static void cycleIslandColor() {
+        CONFIG.islandColor = (CONFIG.islandColor + 1) % DynamicIslandHud.COLOR_NAMES.length;
+        CONFIG.save();
+    }
+
+    public static void toggleIslandShowPaused() {
+        CONFIG.islandShowPaused = !CONFIG.islandShowPaused;
+        CONFIG.save();
+    }
+
+    /** Beralih antara tampilan kartu lengkap dan pil kecil. */
+    public static void toggleIslandCard() {
+        CONFIG.islandCard = !CONFIG.islandCard;
+        CONFIG.save();
+    }
+
+    /**
+     * Menambah folder atau file lagu ke folder-musik.txt dari dalam game.
+     * Mengembalikan pesan hasil untuk ditampilkan di status.
+     */
+    public static String addSource(String raw) {
+        String path = raw == null ? "" : raw.replace("\"", "").strip();
+        if (path.isEmpty()) {
+            return "Isi path lagu dulu.";
+        }
+        Path p;
+        try {
+            p = Path.of(path);
+        } catch (RuntimeException badPath) {
+            return "Path tidak valid.";
+        }
+        if (!Files.exists(p)) {
+            return "Path tidak ditemukan.";
+        }
+        if (Files.isRegularFile(p) && !PlaylistManager.isSupported(p)) {
+            return "File harus MP3, OGG, atau WAV.";
+        }
+        Path folder = musicFolder == null
+                ? FabricLoader.getInstance().getGameDir().resolve("xfive-music") : musicFolder;
+        Path list = folder.resolve(SOURCE_FILE);
+        try {
+            Files.createDirectories(folder);
+            if (!Files.exists(list)) {
+                Files.writeString(list, SOURCE_TEMPLATE, StandardCharsets.UTF_8);
+            }
+            for (String line : Files.readAllLines(list, StandardCharsets.UTF_8)) {
+                if (line.strip().equals(path)) {
+                    return "Path ini sudah ada di daftar.";
+                }
+            }
+            String existing = Files.readString(list, StandardCharsets.UTF_8);
+            String lead = existing.isEmpty() || existing.endsWith("\n") ? "" : "\n";
+            Files.writeString(list, lead + path + "\n", StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            return "Gagal menyimpan daftar: " + e.getMessage();
+        }
+        int n = refreshMusic();
+        return "Ditambahkan. Sekarang ada " + n + " lagu.";
+    }
+
     private static KeyMapping register(String name, int key, KeyMapping.Category category) {
         return KeyMappingHelper.registerKeyMapping(
                 new KeyMapping(name, InputConstants.Type.KEYSYM, key, category));
@@ -181,6 +274,25 @@ public final class XFiveLiveClient implements ClientModInitializer {
         while (chatKey.consumeClick()) {
             CONFIG.enableChat = !CONFIG.enableChat;
             CONFIG.save();
+        }
+
+        while (controlsKey.consumeClick()) {
+            Minecraft.getInstance().setScreenAndShow(new MusicControlScreen(null));
+        }
+        while (playKey.consumeClick()) {
+            MUSIC.togglePause();
+        }
+        while (nextKey.consumeClick()) {
+            MUSIC.next();
+        }
+        while (prevKey.consumeClick()) {
+            MUSIC.previous();
+        }
+        while (stopKey.consumeClick()) {
+            MUSIC.stop();
+        }
+        while (repeatKey.consumeClick()) {
+            cycleRepeat();
         }
 
         CHAT.update(System.currentTimeMillis());

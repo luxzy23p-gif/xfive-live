@@ -130,6 +130,13 @@ public final class XFiveTests {
         check("next 1->2", pm.next() != null && pm.currentIndex() == 2);
         check("next wrap 2->0", pm.next() != null && pm.currentIndex() == 0);
         check("previous wrap 0->2", pm.previous() != null && pm.currentIndex() == 2);
+        Path dl = Path.of("Why_Don_t_We_-_8_Letters__Lyrics_(1280).mp3");
+        check("nama dengan garis bawah dibaca rapi", PlaylistManager.parse(dl).artist().equals("Why Don t We")
+                && PlaylistManager.parse(dl).title().equals("8 Letters Lyrics"));
+        check("tag resmi di ujung judul dibuang",
+                PlaylistManager.parse(Path.of("Adele - Hello (Official Video).mp3")).title().equals("Hello"));
+        check("tag biasa di tengah judul tetap",
+                PlaylistManager.parse(Path.of("A - Song (Remix) Live.mp3")).title().equals("Song (Remix) Live"));
         check("folder tidak ada = 0 lagu", new PlaylistManager().scan(dir.resolve("nope")) == 0);
         testScanSources(dir.resolveSibling("sources"));
     }
@@ -156,6 +163,12 @@ public final class XFiveTests {
         a.theme = "cyan";
         a.musicFolder = "/music";
         a.hudPositions.get("chatHud")[1] = 77;
+        a.islandSize = 2;
+        a.islandColor = 3;
+        a.islandShowPaused = true;
+        a.islandCard = false;
+        a.repeatMode = 2;
+        a.shuffle = true;
         a.save();
 
         XFiveConfig b = new XFiveConfig(dir);
@@ -165,6 +178,9 @@ public final class XFiveTests {
         check("config theme tersimpan", b.theme.equals("cyan"));
         check("config folder tersimpan", b.musicFolder.equals("/music"));
         check("config posisi HUD tersimpan", b.hudPositions.get("chatHud")[1] == 77);
+        check("config ukuran dan warna island tersimpan", b.islandSize == 2 && b.islandColor == 3);
+        check("config island jeda, kartu, ulang, acak tersimpan",
+                b.islandShowPaused && !b.islandCard && b.repeatMode == 2 && b.shuffle);
 
         Files.writeString(dir.resolve(XFiveConfig.FILE_NAME), "general.hudScale=99\nlyrics.fontSize=-3\n");
         XFiveConfig c = new XFiveConfig(dir);
