@@ -299,8 +299,8 @@ public final class ControlCenterScreen extends Screen {
 
         // Right-side song list.
         g.fill(x, top - 2, x + w, bottom, GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.035f));
-        GlassPanelRenderer.text(g, font, "TITLE", x + 7, top - 14, GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, "ARTIST", x + Math.max(90, w - 100), top - 14, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "TITLE", x + 7, songSearch.getY() - 11, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "ARTIST", x + Math.max(70, w - 92), songSearch.getY() - 11, GlassPanelRenderer.MUTED);
         List<PlaylistManager.Track> tracks = XFiveLiveClient.MUSIC.playlist().tracks();
         List<Integer> shown = filteredSongIndexes();
         int visibleRows = Math.max(1, (bottom - top) / ROW_H);
