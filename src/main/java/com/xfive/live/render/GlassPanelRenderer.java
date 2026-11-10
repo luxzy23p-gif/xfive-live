@@ -32,9 +32,15 @@ public final class GlassPanelRenderer {
     }
 
     public static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h, float alpha, int accentRgb) {
-        g.fill(x, y, x + w, y + h, argb(BACKGROUND, alpha));
-        g.fill(x, y, x + w, y + 1, argb(accentRgb, 0.9f));
-        g.fill(x, y + h - 1, x + w, y + h, argb(accentRgb, 0.35f));
+        // Layered translucent fills create a light glass surface without expensive blur passes.
+        float base = Math.max(0.12f, Math.min(0.78f, alpha));
+        g.fill(x, y, x + w, y + h, argb(BACKGROUND, base));
+        g.fill(x + 1, y + 1, x + w - 1, y + Math.max(2, h / 3),
+                argb(WHITE, 0.035f));
+        g.fill(x + 1, y + 1, x + 2, y + h - 1, argb(WHITE, 0.10f));
+        g.fill(x + w - 2, y + 1, x + w - 1, y + h - 1, argb(WHITE, 0.055f));
+        g.fill(x, y, x + w, y + 1, argb(accentRgb, 0.88f));
+        g.fill(x, y + h - 1, x + w, y + h, argb(accentRgb, 0.28f));
     }
 
     public static void text(GuiGraphicsExtractor g, Font font, String s, int x, int y, int rgb) {
