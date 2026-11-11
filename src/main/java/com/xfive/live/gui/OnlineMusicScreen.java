@@ -18,9 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,8 +34,6 @@ import java.util.concurrent.Executors;
 /** Online search and artist-enabled downloads through the Audius public API. */
 public final class OnlineMusicScreen extends Screen {
     private static final String API = "https://discoveryprovider.audius.co/v1";
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(12)).followRedirects(HttpClient.Redirect.NORMAL).build();
     private static final ExecutorService NETWORK = Executors.newFixedThreadPool(2, r -> {
         Thread t = new Thread(r, "xfive-online-music");
         t.setDaemon(true);
@@ -94,11 +91,21 @@ public final class OnlineMusicScreen extends Screen {
             try {
                 String url = API + "/tracks/search?query=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
                         + "&limit=10&app_name=xfive_live";
-                HttpRequest req = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(25))
-                        .header("User-Agent", "XFiveLive/1.0").GET().build();
-                HttpResponse<String> res = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-                if (res.statusCode() != 200) throw new IOException("Audius HTTP " + res.statusCode());
-                JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(12000);
+                connection.setReadTimeout(25000);
+                connection.setRequestProperty("User-Agent", "XFiveLive/1.0");
+                if (connection.getResponseCode() != 200) {
+                    int code = connection.getResponseCode();
+                    connection.disconnect();
+                    throw new IOException("Audius HTTP " + code);
+                }
+                String body;
+                try (InputStream in = connection.getInputStream()) {
+                    body = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                } finally { connection.disconnect(); }
+                JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                 List<Track> found = new ArrayList<>();
                 JsonElement data = root.get("data");
                 if (data != null && data.isJsonArray()) {
@@ -134,12 +141,16 @@ public final class OnlineMusicScreen extends Screen {
             Path temp = null;
             try {
                 String url = API + "/tracks/" + track.id() + "/download?app_name=xfive_live";
-                HttpRequest req = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofMinutes(3))
-                        .header("User-Agent", "XFiveLive/1.0").GET().build();
-                HttpResponse<InputStream> res = HTTP.send(req, HttpResponse.BodyHandlers.ofInputStream());
-                if (res.statusCode() != 200) {
-                    res.body().close();
-                    throw new IOException("Download HTTP " + res.statusCode());
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(45000);
+                connection.setInstanceFollowRedirects(true);
+                connection.setRequestProperty("User-Agent", "XFiveLive/1.0");
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 200) {
+                    connection.disconnect();
+                    throw new IOException("Download HTTP " + responseCode);
                 }
                 Path folder = FabricLoader.getInstance().getGameDir().resolve("xfive-music");
                 Files.createDirectories(folder);
@@ -151,7 +162,7 @@ public final class OnlineMusicScreen extends Screen {
                 while (Files.exists(target)) target = folder.resolve(safe + " (" + suffix++ + ").mp3");
                 temp = Files.createTempFile(folder, "xfive-download-", ".part");
                 long total = 0;
-                try (InputStream in = res.body(); var out = Files.newOutputStream(temp)) {
+                try (InputStream in = connection.getInputStream(); var out = Files.newOutputStream(temp)) {
                     byte[] buffer = new byte[16384];
                     int n;
                     while ((n = in.read(buffer)) != -1) {
@@ -161,6 +172,7 @@ public final class OnlineMusicScreen extends Screen {
                     }
                 }
                 if (total < 16) throw new IOException("Downloaded file is empty.");
+                connection.disconnect();
                 Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
                 temp = null;
                 Minecraft.getInstance().execute(() -> {
