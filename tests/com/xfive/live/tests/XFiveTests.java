@@ -168,6 +168,8 @@ public final class XFiveTests {
         a.islandColor = 3;
         a.islandShowPaused = true;
         a.islandCard = false;
+        a.islandAutoHide = false;
+        a.islandShowSec = 9;
         a.repeatMode = 2;
         a.shuffle = true;
         a.save();
@@ -181,7 +183,8 @@ public final class XFiveTests {
         check("config posisi HUD tersimpan", b.hudPositions.get("chatHud")[1] == 77);
         check("config ukuran dan warna island tersimpan", b.islandW == 300 && b.islandH == 100 && b.islandColor == 3);
         check("config island jeda, kartu, ulang, acak tersimpan",
-                b.islandShowPaused && !b.islandCard && b.repeatMode == 2 && b.shuffle);
+                b.islandShowPaused && !b.islandCard && b.repeatMode == 2 && b.shuffle
+                        && !b.islandAutoHide && b.islandShowSec == 9);
 
         Files.writeString(dir.resolve(XFiveConfig.FILE_NAME), "general.hudScale=99\nlyrics.fontSize=-3\n");
         XFiveConfig c = new XFiveConfig(dir);

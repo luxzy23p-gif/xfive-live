@@ -3,8 +3,6 @@ package com.xfive.live;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
-import com.xfive.live.gui.MusicControlScreen;
-import com.xfive.live.gui.SongListScreen;
 import com.xfive.live.gui.ControlCenterScreen;
 import com.xfive.live.hud.DynamicIslandHud;
 import com.xfive.live.hud.LiveChatHud;

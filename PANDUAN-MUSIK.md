@@ -37,34 +37,29 @@ Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manua
 
 ## Langkah 4: Putar lagu di dalam game
 
-1. Buka game, lalu tekan **Right Shift** untuk membuka menu X FIVE LIVE.
+1. Buka game, lalu tekan **F6** untuk membuka Control Center di halaman Audio.
 2. Lagu baru otomatis terbaca. Tidak perlu restart atau muat ulang Minecraft.
-3. Tekan **Putar / Jeda** untuk memutar musik.
-4. Atur **Volume** dengan slider di kolom kiri.
-5. Tekan **Lagu berikutnya** atau **Lagu sebelumnya** untuk pindah lagu.
-6. Tekan **Tutup** untuk keluar dari menu. Pengaturan akan tersimpan otomatis.
+3. Ketuk sebuah lagu untuk memutar, atau tekan tombol putar di bar bawah.
+4. Atur volume dengan slider di bar bawah. Tombol panah pindah ke lagu sebelumnya atau berikutnya.
+5. Tekan **Close** untuk keluar. Pengaturan tersimpan otomatis.
 
-## Tambah lagu langsung dari game
+## Control Center (semua dalam satu jendela)
 
-1. Tekan **F6** (atau Right Shift, lalu **Daftar lagu**). Tidak perlu membuka pengaturan dulu.
-2. Daftar lagu bisa digeser dengan jari, dan ada kotak **cari** di atas. Ketuk satu lagu untuk memutar.
-3. Untuk menambah lagu, ketik path folder atau file lagu di kotak bawah. Contoh: `/storage/emulated/0/Music`
-4. Tekan **Tambah**. Lagu langsung masuk ke daftar tanpa restart Minecraft.
+Tekan **F6** untuk langsung ke Audio (daftar lagu + pemutar), atau **Right Shift** untuk Home. Mouse otomatis aktif saat jendela terbuka. Isinya:
 
-Jika path tidak ditemukan atau bukan MP3, OGG, atau WAV, status akan menjelaskan alasannya.
+- **Home**: ringkasan lagu, tombol cepat HUD, Dynamic Island, lirik, chat, ulang, acak.
+- **Audio**: daftar lagu bergaya playlist. Geser dengan jari, ketuk lagu untuk memutar, ketik di kotak cari. Tekan **+ Add**, isi path folder atau file lagu (contoh `/storage/emulated/0/Music`), lalu **Save**.
+- **HUD**: nyalakan atau matikan tiap HUD, atur HUD opacity, ukuran lirik, lebar dan tinggi Dynamic Island. **Drag HUD** membuka mode edit: geser kotak HUD dengan jari, tarik titik di pojok kanan bawah Island untuk mengubah ukuran, lalu tekan **Done**.
+- **Custom Controls**: bentuk Island (Card atau Pill), warna, Auto hide, lama pop-up, ulang, acak, berhenti, volume.
+- **Appearance**: warna aksen, Glass opacity, Animations.
+- **Settings**: aktifkan mod, putar otomatis, segarkan daftar lagu, folder dan status.
+- **Bar pemutar di bawah**: sebelumnya, putar/jeda, berikutnya, progres lagu (ketuk atau geser), shuffle, repeat, dan volume.
 
-## Kontrol Dynamic Island
+Tekan **Close** atau Esc untuk keluar. Semua pengaturan tersimpan otomatis.
 
-Pop-up di dalam game tidak bisa diklik, jadi tombolnya ada di layar kontrol:
+## Dynamic Island
 
-1. Tekan **F7**, atau tekan Right Shift lalu **Kontrol Dynamic Island**.
-2. Di kartu, ketuk tombol sebelumnya, jeda/putar, dan berikutnya. Ketuk bar progres untuk pindah posisi lagu.
-3. **Berhenti**, **Ulang** (Mati, Semua, Satu), dan **Acak** ada di bawah kartu.
-4. Slider **Lebar** dan **Tinggi** mengatur besar kartu (bisa dibuat lebar dan panjang). **Reset ukuran** mengembalikan ke bawaan. **Warna**, **Tampil saat jeda**, dan **Tampilan** (Kartu atau Pil) mengatur bentuk pop-up.
-5. Di menu Right Shift, geser kotak Island dengan jari, dan tarik kotak kecil di pojok kanan bawahnya untuk mengubah ukuran.
-6. Tombol **Daftar lagu** di layar ini membuka daftar lagu langsung.
-
-Tombol putar, berikutnya, sebelumnya, berhenti, dan ulang juga bisa dipasang di **Options → Controls**, kategori X FIVE LIVE. Secara bawaan belum dipasang.
+Saat lagu mulai, berganti, atau dijeda, kapsul kecil muncul di atas layar, membuka menjadi kartu, lalu menutup sendiri setelah beberapa detik. Di **Custom Controls** kamu bisa mematikan **Auto hide** agar kartu tetap tampil, memilih Card atau Pill, dan mengatur lama tampil.
 
 ## Opsional: lagu dari folder lain
 
@@ -82,16 +77,6 @@ Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
 
 Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke folder **xfive-music**.
 
-## Menggeser HUD
-
-1. Tekan **Right Shift** untuk membuka menu X FIVE LIVE.
-2. Tahan klik kiri (atau jari di layar) pada kotak HUD yang ingin dipindah, lalu geser.
-3. Lepas untuk menaruhnya. Posisi tersimpan otomatis.
-4. Kotak yang disorot lebih terang saat kursor berada di atasnya. Yang bisa digeser: Musik atau Dynamic Island, Lirik, dan Chat.
-5. Tombol **Reset posisi HUD** mengembalikan semua HUD ke posisi awal.
-
-Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawah. Memilih posisi ini juga menghapus posisi lirik yang digeser manual.
-
 ## Kalau musik tidak berbunyi
 
 - Pastikan formatnya benar-benar MP3, OGG, atau WAV. Mengganti nama file dari .m4a atau .webm menjadi .mp3 tidak membuat file itu jadi MP3. Kalau status menulis "M4A" atau "WebM", ubah file itu dengan aplikasi konverter ke MP3 atau OGG.
@@ -107,5 +92,5 @@ Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawa
 ## Batasan saat ini
 
 - Tidak ada koneksi ke Spotify atau YouTube. Musik hanya berasal dari file di HP.
-- Tombol kontrol ada di layar F7 atau menu Right Shift, karena HUD di dalam game tidak bisa diklik.
+- HUD di dalam game tidak bisa diklik (kursor terkunci). Tekan F6 untuk membuka Control Center dan mengendalikan musik.
 - Pemutaran di Android belum diuji langsung di perangkat. Kalau tidak berbunyi, kirim status yang muncul di menu.

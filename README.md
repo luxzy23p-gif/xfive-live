@@ -1,4 +1,4 @@
-# X FIVE LIVE 1.0.0 — Status Build
+# X FIVE LIVE 1.1.0 — Status Build
 
 Mod client-side Fabric untuk Minecraft Java 26.2 (target Java 25). Dokumen ini memisahkan dengan jelas apa yang sudah diuji, apa yang baru ditulis, dan apa yang belum dikerjakan.
 
@@ -39,7 +39,7 @@ Pemeriksaan sintaks: seluruh file Minecraft tidak punya error parser. Error yang
 
 1. Pastikan `loom_version` di `gradle.properties` sesuai versi Fabric Loom terbaru untuk 26.x.
 2. Jalankan `./gradlew build`.
-3. Hasilnya di `build/libs/XFiveLive-1.0.0.jar`.
+3. Hasilnya di `build/libs/XFiveLive-1.1.0.jar`.
 
 Jika build gagal, error pertama kemungkinan berasal dari nama API Minecraft yang belum diverifikasi di file HUD, `XFiveLiveClient`, atau `GlassPanelRenderer`.
 
@@ -56,7 +56,8 @@ File: `config/xfive-live.properties` (dibuat otomatis saat pertama kali disimpan
 
 | Tombol | Fungsi |
 |---|---|
-| Right Shift | Buka menu pengaturan X FIVE LIVE |
+| Right Shift | Buka Control Center (Home) |
+| F6 | Buka Control Center di halaman Audio (daftar lagu dan pemutar) |
 | F8 | Tampilkan/sembunyikan HUD |
 | F9 | Tampilkan/sembunyikan lirik |
 | F10 | Tampilkan/sembunyikan chat |
