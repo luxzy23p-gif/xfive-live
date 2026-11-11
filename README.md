@@ -11,6 +11,15 @@ Tes ada di `tests/com/xfive/live/tests/XFiveTests.java` dan hanya memakai kode t
 - **Playlist**: pindai folder sekali (bukan per frame), baca "Artis - Judul" dari nama file, next/previous dengan wrap-around.
 - **Config**: simpan dan muat `config/xfive-live.properties`, nilai di luar batas dikunci, nilai rusak kembali ke default.
 
+## UI Control Center 1.1.0
+
+- Dua skin UI kini dapat dipilih pada Appearance: **Liquid Glass Lite** dan **Dark Music**. Pilihan disimpan sebagai `appearance.style` dan tidak menghapus pilihan warna aksen.
+- Liquid Glass Lite memakai panel kaca ringan; Dark Music memakai panel charcoal matte dengan aksen tema.
+- **Pilihan font khusus belum diimplementasikan.** UI masih memakai font Minecraft aktif.
+- **Spring Pop-in belum diimplementasikan.** Tombol Animations yang sudah ada belum boleh dianggap sebagai bukti transisi buka/tutup.
+- Animasi penutupan yang mengecil menuju HUD juga belum diimplementasikan.
+- Build sukses hanya membuktikan kompilasi/paket; pengujian visual dan input tetap perlu dilakukan di Minecraft/Fabric.
+
 ## Ditulis, tapi belum dikompilasi atau diuji di game
 
 - Entrypoint `XFiveLiveClient`, keybind F8/F9/F10, dan registrasi HUD.
@@ -27,7 +36,7 @@ Pemeriksaan sintaks: seluruh file Minecraft tidak punya error parser. Error yang
 - **Layar pengaturan** (`XFiveLiveScreen`, `SettingsScreen`): sudah ada (Control Center, F6 atau Right Shift).
 - **Kontrol musik di HUD** (tombol play/pause/next): belum. HUD hanya menampilkan.
 - **Drag and drop HUD** dan skala per komponen: belum. Posisi diatur lewat `hud.<nama>.x/y` di file config, dan skala masih global.
-- **Sudut membulat, animasi transisi, album artwork, avatar penonton**: belum.
+- **Animasi transisi Spring Pop-in dan animasi tutup ke HUD, font khusus, album artwork, avatar penonton**: belum.
 - **SRT**: belum.
 - **TikTok LIVE**: di luar cakupan versi ini, sesuai spesifikasi.
 - **Ukuran font lirik**: saat ini hanya mengatur jarak baris, belum menskala teks.
