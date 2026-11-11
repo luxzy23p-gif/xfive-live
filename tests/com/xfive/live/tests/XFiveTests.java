@@ -137,6 +137,7 @@ public final class XFiveTests {
         a.hudScale = 1.5f;
         a.lyricsFontSize = 14;
         a.theme = "cyan";
+        a.themeStyle = "dark_music";
         a.musicFolder = "/music";
         a.hudPositions.get("musicHud")[1] = 77;
         a.islandW = 300;
@@ -155,6 +156,7 @@ public final class XFiveTests {
         check("config hudScale tersimpan", b.hudScale == 1.5f);
         check("config fontSize tersimpan", b.lyricsFontSize == 14);
         check("config theme tersimpan", b.theme.equals("cyan"));
+        check("config UI style tersimpan", b.themeStyle.equals("dark_music"));
         check("config folder tersimpan", b.musicFolder.equals("/music"));
         check("config posisi HUD tersimpan", b.hudPositions.get("musicHud")[1] == 77);
         check("config ukuran dan warna island tersimpan", b.islandW == 300 && b.islandH == 100 && b.islandColor == 3);
