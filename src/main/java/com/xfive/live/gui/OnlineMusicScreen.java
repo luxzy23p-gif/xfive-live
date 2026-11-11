@@ -16,37 +16,40 @@ import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URLEncoder;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Online search and artist-enabled downloads through the Audius public API. */
+/**
+ * Online catalog search, temporary online playback, and creator-authorized downloads.
+ * Audius current API uses is_streamable / is_downloadable fields.
+ */
 public final class OnlineMusicScreen extends Screen {
-    private static final String API = "https://discoveryprovider.audius.co/v1";
-    private static final ExecutorService NETWORK = Executors.newFixedThreadPool(2, r -> {
+    private static final String API = "https://api.audius.co/v1";
+    private static final ExecutorService NETWORK = Executors.newFixedThreadPool(3, r -> {
         Thread t = new Thread(r, "xfive-online-music");
         t.setDaemon(true);
         return t;
     });
     private static final long MAX_BYTES = 100L * 1024L * 1024L;
 
-    private record Track(String id, String title, String artist, long duration) {}
+    private record Track(String id, String title, String artist, long duration,
+                         boolean streamable, boolean downloadable) {}
     private EditBox queryBox;
     private volatile List<Track> results = List.of();
-    private volatile String status = "Search music shared by artists on Audius.";
+    private volatile String status = "Search Audius tracks by title or artist.";
     private volatile boolean searching;
-    private volatile boolean downloading;
+    private volatile boolean busy;
+    private final List<Button> playButtons = new ArrayList<>();
     private final List<Button> downloadButtons = new ArrayList<>();
 
     public OnlineMusicScreen() { super(Component.literal("XFiveLive Online Music")); }
@@ -73,11 +76,16 @@ public final class OnlineMusicScreen extends Screen {
         int rows = Math.min(7, Math.max(3, (ph() - 145) / 34));
         for (int i = 0; i < rows; i++) {
             final int index = i;
-            Button downloadButton = Button.builder(Component.literal("Download"), b -> download(index))
-                    .bounds(right() - 84, listTop() + i * 34 + 4, 78, 22).build();
-            downloadButton.active = false;
-            downloadButtons.add(downloadButton);
-            addRenderableWidget(downloadButton);
+            Button play = Button.builder(Component.literal("Play"), b -> playOnline(index))
+                    .bounds(right() - 132, listTop() + i * 34 + 4, 60, 22).build();
+            Button download = Button.builder(Component.literal("Save"), b -> download(index))
+                    .bounds(right() - 66, listTop() + i * 34 + 4, 60, 22).build();
+            play.active = false;
+            download.active = false;
+            playButtons.add(play);
+            downloadButtons.add(download);
+            addRenderableWidget(play);
+            addRenderableWidget(download);
         }
         addRenderableWidget(Button.builder(Component.literal("Back"),
                 b -> Minecraft.getInstance().setScreenAndShow(ControlCenterScreen.audio()))
@@ -89,13 +97,14 @@ public final class OnlineMusicScreen extends Screen {
         if (query.isEmpty()) { status = "Enter a song title or artist first."; return; }
         if (searching) return;
         searching = true;
-        status = "Searching Audius...";
         results = List.of();
+        status = "Searching online catalog...";
         NETWORK.submit(() -> {
             try {
-                String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-                String body = requestText(API + "/tracks/search?query=" + encodedQuery
-                        + "&limit=20&only_downloadable=true&app_name=xfive_live");
+                String url = API + "/tracks/search?query="
+                        + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                        + "&limit=20&app_name=xfive_live";
+                String body = requestText(url);
                 JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                 List<Track> found = new ArrayList<>();
                 JsonElement data = root.get("data");
@@ -103,165 +112,200 @@ public final class OnlineMusicScreen extends Screen {
                     for (JsonElement element : data.getAsJsonArray()) {
                         if (!element.isJsonObject()) continue;
                         JsonObject item = element.getAsJsonObject();
-                        if (!item.has("downloadable") || !item.get("downloadable").getAsBoolean()) continue;
-                        String id = value(item, "id"), title = value(item, "title");
+                        String id = value(item, "id");
+                        String title = value(item, "title");
                         JsonObject user = item.has("user") && item.get("user").isJsonObject()
                                 ? item.getAsJsonObject("user") : new JsonObject();
                         String artist = value(user, "name");
                         long duration = item.has("duration") && !item.get("duration").isJsonNull()
                                 ? item.get("duration").getAsLong() : 0L;
-                        if (!id.isBlank() && !title.isBlank())
-                            found.add(new Track(id, title, artist.isBlank() ? "Unknown artist" : artist, duration));
+                        boolean streamable = bool(item, "is_streamable");
+                        boolean downloadable = bool(item, "is_downloadable");
+                        if (!id.isBlank() && !title.isBlank() && (streamable || downloadable)) {
+                            found.add(new Track(id, title,
+                                    artist.isBlank() ? "Unknown artist" : artist,
+                                    duration, streamable, downloadable));
+                        }
                     }
                 }
                 results = List.copyOf(found);
                 status = found.isEmpty()
-                        ? "No downloadable tracks found. Try a different title or artist."
-                        : found.size() + " downloadable tracks found. Select Download beside a song.";
-            } catch (Exception e) { status = "Search failed: " + message(e); }
-            finally { searching = false; }
+                        ? "No playable tracks found. Try another title or artist."
+                        : found.size() + " results. Play streams online or save allowed tracks.";
+            } catch (Exception e) {
+                status = "Search failed: " + message(e);
+            } finally {
+                searching = false;
+            }
+        });
+    }
+
+    private void playOnline(int index) {
+        Track track = getTrack(index);
+        if (track == null || !track.streamable() || busy) return;
+        busy = true;
+        status = "Preparing online playback: " + track.title();
+        NETWORK.submit(() -> {
+            Path temp = null;
+            try {
+                Path cache = FabricLoader.getInstance().getGameDir().resolve("xfive-online-cache");
+                Files.createDirectories(cache);
+                temp = Files.createTempFile(cache, "online-", ".mp3");
+                transfer(API + "/tracks/" + track.id() + "/stream?app_name=xfive_live", temp);
+                Path playable = temp;
+                Minecraft.getInstance().execute(() -> {
+                    boolean started = XFiveLiveClient.MUSIC.playOnlineFile(
+                            playable, track.title(), track.artist());
+                    status = started
+                            ? "Online track prepared: " + track.title()
+                            : "Could not start playback: " + XFiveLiveClient.MUSIC.status();
+                    busy = false;
+                });
+                temp = null; // Keep cache file while the decoder/player may still need it.
+            } catch (Exception e) {
+                status = "Online playback failed: " + message(e);
+                busy = false;
+            } finally {
+                if (temp != null) try { Files.deleteIfExists(temp); } catch (IOException ignored) {}
+            }
         });
     }
 
     private void download(int index) {
-        List<Track> snapshot = results;
-        if (downloading || index < 0 || index >= snapshot.size()) return;
-        Track track = snapshot.get(index);
-        downloading = true;
-        status = "Downloading: " + track.title();
+        Track track = getTrack(index);
+        if (track == null || !track.downloadable() || busy) return;
+        busy = true;
+        status = "Saving: " + track.title();
         NETWORK.submit(() -> {
             Path temp = null;
             try {
-                String url = API + "/tracks/" + track.id() + "/download?app_name=xfive_live";
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(20000);
-                connection.setReadTimeout(90000);
-                connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "XFiveLive/1.0");
-                connection.setRequestProperty("Accept", "audio/*,application/octet-stream;q=0.9,*/*;q=0.8");
-                int responseCode;
-                try {
-                    responseCode = connection.getResponseCode();
-                    if (responseCode != HttpURLConnection.HTTP_OK) {
-                        throw new IOException("Audius download HTTP " + responseCode);
-                    }
-                } catch (Exception requestError) {
-                    connection.disconnect();
-                    throw requestError;
-                }
                 Path folder = FabricLoader.getInstance().getGameDir().resolve("xfive-music");
                 Files.createDirectories(folder);
                 String safe = (track.artist() + " - " + track.title())
-                        .replaceAll("[\\\\/:*?\"<>|]", "_").replaceAll("\\s+", " ").strip();
+                        .replaceAll("[\\\\/:*?\\\"<>|]", "_")
+                        .replaceAll("\\s+", " ").strip();
                 if (safe.length() > 120) safe = safe.substring(0, 120).strip();
-                String extension = extensionFor(connection.getContentType());
-                Path target = folder.resolve(safe + extension);
+                Path target = folder.resolve(safe + ".mp3");
                 int suffix = 2;
                 while (Files.exists(target)) target = folder.resolve(safe + " (" + suffix++ + ").mp3");
                 temp = Files.createTempFile(folder, "xfive-download-", ".part");
-                long total = 0;
-                try (InputStream in = connection.getInputStream(); var out = Files.newOutputStream(temp)) {
-                    byte[] buffer = new byte[16384];
-                    int n;
-                    while ((n = in.read(buffer)) != -1) {
-                        total += n;
-                        if (total > MAX_BYTES) throw new IOException("Track exceeds 100 MB.");
-                        out.write(buffer, 0, n);
-                    }
-                } finally {
-                    connection.disconnect();
-                }
-                if (total < 16) throw new IOException("Downloaded file is empty.");
+                transfer(API + "/tracks/" + track.id() + "/download?app_name=xfive_live", temp);
                 Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
                 temp = null;
                 Minecraft.getInstance().execute(() -> {
                     XFiveLiveClient.refreshMusic();
                     status = "Saved to xfive-music: " + track.title();
+                    busy = false;
                 });
-            } catch (Exception e) { status = "Download failed: " + message(e); }
-            finally {
+            } catch (Exception e) {
+                status = "Download failed: " + message(e);
+                busy = false;
+            } finally {
                 if (temp != null) try { Files.deleteIfExists(temp); } catch (IOException ignored) {}
-                downloading = false;
             }
         });
     }
 
-    private static String requestText(String url) throws IOException {
-        IOException lastError = null;
-        for (String base : new String[] { "", "https://api.audius.co/v1" }) {
-            String candidate = base.isEmpty() ? url : url.replace(API, base);
-            HttpURLConnection connection = (HttpURLConnection) new URL(candidate).openConnection();
-            try {
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
-                connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "XFiveLive/1.1");
-                connection.setRequestProperty("Accept", "application/json");
-                int code = connection.getResponseCode();
-                if (code != HttpURLConnection.HTTP_OK) {
-                    lastError = new IOException("Audius search HTTP " + code);
-                    continue;
-                }
-                try (InputStream in = connection.getInputStream()) {
-                    return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-                }
-            } catch (IOException e) {
-                lastError = e;
-            } finally {
-                connection.disconnect();
-            }
-        }
-        throw lastError != null ? lastError : new IOException("Audius search unavailable.");
+    private Track getTrack(int index) {
+        List<Track> snapshot = results;
+        return index >= 0 && index < snapshot.size() ? snapshot.get(index) : null;
     }
 
-    private static String extensionFor(String contentType) {
-        if (contentType == null) return ".mp3";
-        String type = contentType.toLowerCase(Locale.ROOT);
-        if (type.contains("ogg")) return ".ogg";
-        if (type.contains("wav") || type.contains("wave")) return ".wav";
-        if (type.contains("mp4") || type.contains("m4a")) return ".m4a";
-        return ".mp3";
+    private static String requestText(String url) throws IOException {
+        HttpURLConnection connection = open(url);
+        try (InputStream in = connection.getInputStream()) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static void transfer(String url, Path destination) throws IOException {
+        HttpURLConnection connection = open(url);
+        try {
+            String type = connection.getContentType();
+            if (type != null && (type.contains("application/json") || type.contains("text/html"))) {
+                throw new IOException("The music server returned a web response, not audio.");
+            }
+            long total = 0;
+            try (InputStream in = connection.getInputStream();
+                 var out = Files.newOutputStream(destination)) {
+                byte[] buffer = new byte[16384];
+                int n;
+                while ((n = in.read(buffer)) != -1) {
+                    total += n;
+                    if (total > MAX_BYTES) throw new IOException("Audio exceeds 100 MB.");
+                    out.write(buffer, 0, n);
+                }
+            }
+            if (total < 128) throw new IOException("Audio response was empty or incomplete.");
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static HttpURLConnection open(String url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(20000);
+        connection.setReadTimeout(90000);
+        connection.setInstanceFollowRedirects(true);
+        connection.setRequestProperty("User-Agent", "XFiveLive/1.2");
+        connection.setRequestProperty("Accept", "audio/mpeg,application/json;q=0.8,*/*;q=0.5");
+        int code = connection.getResponseCode();
+        if (code != HttpURLConnection.HTTP_OK) {
+            connection.disconnect();
+            throw new IOException("Music service HTTP " + code);
+        }
+        return connection;
+    }
+
+    private static boolean bool(JsonObject object, String key) {
+        return object.has(key) && !object.get(key).isJsonNull()
+                && object.get(key).isJsonPrimitive() && object.get(key).getAsBoolean();
     }
 
     private static String value(JsonObject object, String key) {
-        return object.has(key) && !object.get(key).isJsonNull() ? object.get(key).getAsString() : "";
+        return object.has(key) && !object.get(key).isJsonNull()
+                ? object.get(key).getAsString() : "";
     }
+
     private static String message(Exception e) {
         String s = e.getMessage();
         if (s == null || s.isBlank()) return e.getClass().getSimpleName();
-        return s.length() > 100 ? s.substring(0, 100) : s;
+        return s.length() > 110 ? s.substring(0, 110) : s;
     }
 
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         int x = px(), y = py(), w = pw(), h = ph();
-        List<Track> currentResults = results;
-        for (int i = 0; i < downloadButtons.size(); i++) {
-            downloadButtons.get(i).active = i < currentResults.size() && !downloading;
+        List<Track> snapshot = results;
+        for (int i = 0; i < playButtons.size(); i++) {
+            Track t = i < snapshot.size() ? snapshot.get(i) : null;
+            playButtons.get(i).active = !busy && t != null && t.streamable();
+            downloadButtons.get(i).active = !busy && t != null && t.downloadable();
         }
         int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
         GlassPanelRenderer.panel(g, x, y, w, h, XFiveLiveClient.CONFIG.customTransparency, accent);
         Font font = GlassPanelRenderer.font();
         GlassPanelRenderer.text(g, font, "ONLINE MUSIC", x + 18, y + 16, accent);
-        GlassPanelRenderer.text(g, font, "Audius • artist-enabled downloads", x + 18, y + 29, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "Search • stream • creator-enabled downloads",
+                x + 18, y + 29, GlassPanelRenderer.MUTED);
         super.extractRenderState(g, mouseX, mouseY, partialTick);
         GlassPanelRenderer.text(g, font, status, left(), py() + 72, GlassPanelRenderer.WHITE);
-        List<Track> snapshot = currentResults;
         int rows = Math.min(7, Math.max(3, (h - 145) / 34));
         for (int i = 0; i < rows && i < snapshot.size(); i++) {
             Track t = snapshot.get(i);
             int ry = listTop() + i * 34;
-            String title = t.title().length() > 48 ? t.title().substring(0, 47) + "…" : t.title();
+            String title = t.title().length() > 35 ? t.title().substring(0, 34) + "…" : t.title();
             String artist = t.artist() + (t.duration() > 0
                     ? " • " + t.duration() / 60 + ":" + String.format(Locale.ROOT, "%02d", t.duration() % 60) : "");
             GlassPanelRenderer.text(g, font, title, left() + 7, ry + 3, GlassPanelRenderer.WHITE);
-            GlassPanelRenderer.text(g, font, artist.length() > 64 ? artist.substring(0, 63) + "…" : artist,
+            GlassPanelRenderer.text(g, font, artist.length() > 36 ? artist.substring(0, 35) + "…" : artist,
                     left() + 7, ry + 16, GlassPanelRenderer.MUTED);
         }
-        GlassPanelRenderer.text(g, font, "Downloaded songs are saved in the xfive-music folder.",
+        GlassPanelRenderer.text(g, font, "Play Online uses a temporary cache; Save stores allowed tracks in xfive-music.",
                 left(), y + h - 52, GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, "Only tracks marked downloadable by their creators are shown.",
+        GlassPanelRenderer.text(g, font, "Only tracks whose creators enable downloads can be saved.",
                 left(), y + h - 40, GlassPanelRenderer.MUTED);
     }
 
