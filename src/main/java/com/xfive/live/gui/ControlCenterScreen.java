@@ -114,7 +114,14 @@ public final class ControlCenterScreen extends Screen {
                 }).bounds(cx, y, cw, 22).build();
                 addRenderableWidget(themeBtn);
                 y += 52; // ruang untuk deretan warna tema
-                addRenderableWidget(new OpacitySlider(cx, y, cw, 20)); y += 28;
+                addRenderableWidget(new OpacitySlider(cx, y, cw, 20)); y += 26;
+                addRenderableWidget(button(cx, y, cw, 22,
+                        "UI style: " + ("dark_music".equals(c.themeStyle) ? "Dark Music" : "Liquid Glass Lite"), () -> {
+                            c.themeStyle = "dark_music".equals(c.themeStyle) ? "glass" : "dark_music";
+                            c.save();
+                            open(Page.APPEARANCE);
+                        }));
+                y += 27;
                 addToggle(cx, y, cw, "Animations", () -> c.animations = !c.animations);
             }
             case SETTINGS -> {
