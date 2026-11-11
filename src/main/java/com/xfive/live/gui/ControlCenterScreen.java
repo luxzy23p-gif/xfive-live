@@ -26,14 +26,14 @@ import java.util.Locale;
  */
 public final class ControlCenterScreen extends Screen {
     private enum Page {
-        HOME("Home"), AUDIO("Audio"), HUD("HUD"),
-        CONTROLS("Custom Controls"), APPEARANCE("Appearance"), SETTINGS("Settings");
+        HOME("Home"), AUDIO("Music Library"), HUD("Custom HUD"),
+        CONTROLS("Player Controls"), APPEARANCE("Appearance"), SETTINGS("Settings");
 
         final String title;
         Page(String title) { this.title = title; }
     }
 
-    private static final int SIDEBAR_W = 116;
+    private static final int SIDEBAR_W = 142;
     private static final int ROW_H = 22;
     private final Page page;
     private EditBox songSearch;
@@ -88,21 +88,28 @@ public final class ControlCenterScreen extends Screen {
         int cw = contentW();
         int y = contentTop();
 
-        int step = Math.max(21, Math.min(29, (ph - 92) / Page.values().length));
+        int step = Math.max(20, Math.min(25, (ph - 126) / Page.values().length));
+        int navY = sy + 56;
         for (Page target : Page.values()) {
-            int by = sy + 44 + target.ordinal() * step;
-            addRenderableWidget(button(sx + 10, by, SIDEBAR_W - 20, step - 5,
+            if (target == Page.HUD || target == Page.CONTROLS || target == Page.APPEARANCE || target == Page.SETTINGS) {
+                if (target == Page.HUD) navY += 10;
+            }
+            addRenderableWidget(button(sx + 10, navY, SIDEBAR_W - 20, step - 4,
                     target.title, () -> open(target)));
+            navY += step;
         }
 
         switch (page) {
             case HOME -> {
-                addRenderableWidget(button(cx, y, cw, 24, "Audio & Playlist", () -> open(Page.AUDIO))); y += 34;
-                addRenderableWidget(button(cx, y, cw, 24, "HUD Settings", () -> open(Page.HUD))); y += 34;
-                addRenderableWidget(button(cx, y, cw, 24, "Custom Controls", () -> open(Page.CONTROLS))); y += 34;
-                addRenderableWidget(button(cx, y, cw, 24, "Appearance", () -> open(Page.APPEARANCE))); y += 34;
-                addRenderableWidget(button(cx, y, cw, 24, "Online Music", () ->
+                int half = Math.max(62, (cw - 10) / 2);
+                addRenderableWidget(button(cx, y, half, 27, "Music Library", () -> open(Page.AUDIO)));
+                addRenderableWidget(button(cx + half + 10, y, half, 27, "Online Search", () ->
                         Minecraft.getInstance().setScreenAndShow(new OnlineMusicScreen())));
+                y += 37;
+                addRenderableWidget(button(cx, y, half, 27, "Custom HUD", () -> open(Page.HUD)));
+                addRenderableWidget(button(cx + half + 10, y, half, 27, "Settings", () -> open(Page.SETTINGS)));
+                y += 38;
+                addRenderableWidget(button(cx, y, cw, 24, "Appearance & Theme", () -> open(Page.APPEARANCE)));
             }
             case AUDIO -> initAudio(cx, cw, y);
             case HUD -> initHud(cx, cw, y);
@@ -361,6 +368,59 @@ public final class ControlCenterScreen extends Screen {
         }
     }
 
+    private void drawHomeDashboard(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
+        int x = contentX();
+        int w = contentW();
+        int y = contentTop() + 4;
+        int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
+        PlaylistManager.Track current = XFiveLiveClient.MUSIC.currentTrack();
+
+        GlassPanelRenderer.text(g, font, "Welcome to XFiveLive", x + 2, y, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font, "Your music, library and personal controls in one place",
+                x + 2, y + 15, GlassPanelRenderer.MUTED);
+
+        int heroY = y + 38;
+        int heroH = Math.max(82, Math.min(124, panelH() / 3));
+        GlassPanelRenderer.panel(g, x, heroY, w, heroH,
+                Math.min(0.92f, XFiveLiveClient.CONFIG.customTransparency), accent);
+        g.fill(x + 2, heroY + 2, x + w - 2, heroY + heroH - 2, 0x55202130);
+        GlassPanelRenderer.text(g, font, "NOW PLAYING", x + 14, heroY + 13, accent);
+        GlassPanelRenderer.text(g, font,
+                GlassPanelRenderer.trim(current == null ? "Choose a song to get started" : current.title(), 38),
+                x + 14, heroY + 35, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font,
+                GlassPanelRenderer.trim(current == null ? "Your music library is ready" : current.artist(), 42),
+                x + 14, heroY + 51, GlassPanelRenderer.MUTED);
+        String playback = XFiveLiveClient.MUSIC.isPlaying() ? "PLAYING" :
+                (XFiveLiveClient.MUSIC.isLoading() ? "LOADING" : "PAUSED");
+        GlassPanelRenderer.text(g, font, playback, x + w - font.width(playback) - 16,
+                heroY + heroH - 18, accent);
+
+        int cardY = heroY + heroH + 14;
+        int gap = 8;
+        int cardW = (w - gap * 2) / 3;
+        String[] labels = {"MUSIC LIBRARY", "ONLINE SEARCH", "SETTINGS"};
+        String[] details = {
+                XFiveLiveClient.MUSIC.playlist().size() + " local tracks",
+                "Find and play online",
+                "HUD, colors and themes"
+        };
+        for (int i = 0; i < 3; i++) {
+            int cx = x + i * (cardW + gap);
+            GlassPanelRenderer.panel(g, cx, cardY, cardW, 66, 0.82f, accent);
+            GlassPanelRenderer.text(g, font, labels[i], cx + 8, cardY + 14, GlassPanelRenderer.WHITE);
+            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(details[i], 22),
+                    cx + 8, cardY + 34, GlassPanelRenderer.MUTED);
+        }
+
+        int quickY = cardY + 80;
+        GlassPanelRenderer.text(g, font, "QUICK ACCESS", x + 2, quickY, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "Library  •  Online Music  •  Custom HUD  •  Appearance",
+                x + 2, quickY + 17, 0xDDE0E8);
+        GlassPanelRenderer.text(g, font, "Use the left navigation to open each section.",
+                x + 2, quickY + 34, GlassPanelRenderer.MUTED);
+    }
+
     private void drawAudioList(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
         if (page != Page.AUDIO || songSearch == null) return;
         int x = audioListX();
@@ -469,16 +529,23 @@ public final class ControlCenterScreen extends Screen {
         GlassPanelRenderer.panel(g, x, y, w, h, XFiveLiveClient.CONFIG.customTransparency, accent);
         // sidebar lebih gelap, dengan penanda aksen di halaman aktif
         g.fill(x + 3, y + 8, x + SIDEBAR_W - 2, y + h - 8, GlassPanelRenderer.argb(0x000000, 0.30f));
-        int step = Math.max(21, Math.min(29, (h - 92) / Page.values().length));
-        g.fill(x + 6, y + 44 + page.ordinal() * step + 3, x + 9, y + 44 + page.ordinal() * step + step - 8,
+        int step = Math.max(20, Math.min(25, (h - 126) / Page.values().length));
+        int activeY = y + 56 + page.ordinal() * step;
+        if (page.ordinal() >= Page.HUD.ordinal()) activeY += 10;
+        g.fill(x + 6, activeY + 3, x + 9, activeY + step - 8,
                 GlassPanelRenderer.argb(accent, 1f));
         super.extractRenderState(g, mouseX, mouseY, partialTick);
         g.fill(x + SIDEBAR_W, y + 12, x + SIDEBAR_W + 1, y + h - 12,
                 GlassPanelRenderer.argb(GlassPanelRenderer.WHITE, 0.10f));
         Font font = GlassPanelRenderer.font();
-        GlassPanelRenderer.text(g, font, "X FIVE LIVE", x + 12, y + 14, GlassPanelRenderer.WHITE);
-        GlassPanelRenderer.text(g, font, "CONTROL CENTER", x + 12, y + 27, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "XFiveLive", x + 12, y + 14, GlassPanelRenderer.WHITE);
+        GlassPanelRenderer.text(g, font, "MUSIC PLAYER", x + 12, y + 27, GlassPanelRenderer.MUTED);
+        GlassPanelRenderer.text(g, font, "LIBRARY", x + 12, y + 45, GlassPanelRenderer.MUTED);
+        if (page.ordinal() >= Page.HUD.ordinal()) {
+            GlassPanelRenderer.text(g, font, "SETTINGS", x + 12, y + 45 + step * 2 + 4, GlassPanelRenderer.MUTED);
+        }
         GlassPanelRenderer.text(g, font, page.title, x + SIDEBAR_W + 18, y + 20, accent);
+        if (page == Page.HOME) drawHomeDashboard(g, font, mouseX, mouseY);
         drawAudioList(g, font, mouseX, mouseY);
         drawSwatches(g, font);
         if (page == Page.HUD && hudEditMode) {
