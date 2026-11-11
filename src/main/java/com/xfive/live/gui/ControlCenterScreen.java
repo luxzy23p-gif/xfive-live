@@ -100,7 +100,9 @@ public final class ControlCenterScreen extends Screen {
                 addRenderableWidget(button(cx, y, cw, 24, "Audio & Playlist", () -> open(Page.AUDIO))); y += 34;
                 addRenderableWidget(button(cx, y, cw, 24, "HUD Settings", () -> open(Page.HUD))); y += 34;
                 addRenderableWidget(button(cx, y, cw, 24, "Custom Controls", () -> open(Page.CONTROLS))); y += 34;
-                addRenderableWidget(button(cx, y, cw, 24, "Appearance", () -> open(Page.APPEARANCE)));
+                addRenderableWidget(button(cx, y, cw, 24, "Appearance", () -> open(Page.APPEARANCE))); y += 34;
+                addRenderableWidget(button(cx, y, cw, 24, "Online Music", () ->
+                        Minecraft.getInstance().setScreenAndShow(new OnlineMusicScreen())));
             }
             case AUDIO -> initAudio(cx, cw, y);
             case HUD -> initHud(cx, cw, y);
