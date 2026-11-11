@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Properties;
 
 /** Pengaturan X FIVE LIVE, disimpan di config/xfive-live.properties. Nilai di luar batas dikunci ke batas. */
@@ -35,6 +37,7 @@ public final class XFiveConfig {
     public String musicFolder = "";
     public int repeatMode = 1;          // 0 mati, 1 semua, 2 satu
     public boolean shuffle = false;
+    public final Set<String> favoriteMusic = new LinkedHashSet<>();
 
     // Lyrics
     public boolean enableLyrics = true;
@@ -103,6 +106,9 @@ public final class XFiveConfig {
         musicFolder = p.getProperty("music.folder", musicFolder);
         repeatMode = integer(p, "music.repeat", repeatMode, 0, 2);
         shuffle = bool(p, "music.shuffle", shuffle);
+        favoriteMusic.clear();
+        String savedFavorites = p.getProperty("music.favorites", "");
+        for (String item : savedFavorites.split("\\n")) if (!item.isBlank()) favoriteMusic.add(item.strip());
 
         enableLyrics = bool(p, "lyrics.enable", enableLyrics);
         lyricsFontSize = integer(p, "lyrics.fontSize", lyricsFontSize, 6, 20);
@@ -144,6 +150,7 @@ public final class XFiveConfig {
         put(p, "music.folder", musicFolder);
         put(p, "music.repeat", repeatMode);
         put(p, "music.shuffle", shuffle);
+        put(p, "music.favorites", String.join("\\n", favoriteMusic));
 
         put(p, "lyrics.enable", enableLyrics);
         put(p, "lyrics.fontSize", lyricsFontSize);
