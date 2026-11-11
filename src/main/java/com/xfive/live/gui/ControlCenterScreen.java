@@ -26,7 +26,7 @@ import java.util.Locale;
  */
 public final class ControlCenterScreen extends Screen {
     private enum Page {
-        HOME("Home"), AUDIO("Music Library"), HUD("Custom HUD"),
+        HOME("Home"), AUDIO("Music Library"), FAVORITES("Favorites"), HUD("Custom HUD"),
         CONTROLS("Player Controls"), APPEARANCE("Appearance"), SETTINGS("Settings");
 
         final String title;
@@ -111,7 +111,7 @@ public final class ControlCenterScreen extends Screen {
                 y += 38;
                 addRenderableWidget(button(cx, y, cw, 24, "Appearance & Theme", () -> open(Page.APPEARANCE)));
             }
-            case AUDIO -> initAudio(cx, cw, y);
+            case AUDIO, FAVORITES -> initAudio(cx, cw, y);
             case HUD -> initHud(cx, cw, y);
             case CONTROLS -> initControls(cx, cw, y);
             case APPEARANCE -> {
@@ -422,7 +422,7 @@ public final class ControlCenterScreen extends Screen {
     }
 
     private void drawAudioList(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
-        if (page != Page.AUDIO || songSearch == null) return;
+        if ((page != Page.AUDIO && page != Page.FAVORITES) || songSearch == null) return;
         int x = audioListX();
         int w = audioListW();
         int top = audioListTop();
@@ -490,6 +490,8 @@ public final class ControlCenterScreen extends Screen {
             GlassPanelRenderer.text(g, font, fit(font, t.title(), titleMax), titleX, ry + textDy,
                     current ? GlassPanelRenderer.WHITE : 0xE6E9F2);
             GlassPanelRenderer.text(g, font, fit(font, t.artist(), artistW), artistX, ry + textDy, color);
+            String fav = XFiveLiveClient.CONFIG.favoriteMusic.contains(t.path().toAbsolutePath().toString()) ? "♥" : "♡";
+            GlassPanelRenderer.text(g, font, fav, x + w - 12, ry + textDy, accent);
         }
         String count = shown.size() + " / " + tracks.size() + " songs";
         GlassPanelRenderer.text(g, font, count, x + w - font.width(count) - 5, bottom + 2, GlassPanelRenderer.MUTED);
@@ -598,9 +600,27 @@ public final class ControlCenterScreen extends Screen {
                 return true;
             }
         }
-        if (page == Page.AUDIO && songSearch != null && inSeekBar(event.x(), event.y())) {
+        if ((page == Page.AUDIO || page == Page.FAVORITES) && songSearch != null && inSeekBar(event.x(), event.y())) {
             seekAt(event.x());
             seeking = true;
+            return true;
+        }
+        if ((page == Page.AUDIO || page == Page.FAVORITES) && songSearch != null && inList(event.x(), event.y())) {
+            int row = (int) ((event.y() - audioListTop()) / ROW_H);
+            List<Integer> shown = filteredSongIndexes();
+            int shownIndex = (int) songScroll + row;
+            if (event.x() >= audioListX() + audioListW() - 22 && shownIndex >= 0 && shownIndex < shown.size()) {
+                PlaylistManager.Track track = XFiveLiveClient.MUSIC.playlist().tracks().get(shown.get(shownIndex));
+                String key = track.path().toAbsolutePath().toString();
+                if (!XFiveLiveClient.CONFIG.favoriteMusic.add(key)) XFiveLiveClient.CONFIG.favoriteMusic.remove(key);
+                XFiveLiveClient.CONFIG.save();
+                return true;
+            }
+            // ketuk memutar saat jari dilepas; geser menggulir daftar (layar sentuh tidak punya roda mouse)
+            listPress = true;
+            listDragged = false;
+            listPressY = event.y();
+            listLastY = event.y();
             return true;
         }
         if (page == Page.AUDIO && songSearch != null && inList(event.x(), event.y())) {
@@ -723,15 +743,17 @@ public final class ControlCenterScreen extends Screen {
         List<Integer> shown = new ArrayList<>();
         for (int i = 0; i < tracks.size(); i++) {
             PlaylistManager.Track t = tracks.get(i);
-            if (query.isEmpty() || t.title().toLowerCase(Locale.ROOT).contains(query)
-                    || t.artist().toLowerCase(Locale.ROOT).contains(query)) shown.add(i);
+            boolean favoriteOnly = page == Page.FAVORITES;
+            boolean favorite = XFiveLiveClient.CONFIG.favoriteMusic.contains(t.path().toAbsolutePath().toString());
+            if ((!favoriteOnly || favorite) && (query.isEmpty() || t.title().toLowerCase(Locale.ROOT).contains(query)
+                    || t.artist().toLowerCase(Locale.ROOT).contains(query))) shown.add(i);
         }
         return shown;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (page == Page.AUDIO && mouseX >= audioListX() && mouseX <= audioListX() + audioListW()
+        if ((page == Page.AUDIO || page == Page.FAVORITES) && mouseX >= audioListX() && mouseX <= audioListX() + audioListW()
                 && mouseY >= audioListTop() && mouseY <= audioListBottom()) {
             songScroll -= scrollY;
             return true;
