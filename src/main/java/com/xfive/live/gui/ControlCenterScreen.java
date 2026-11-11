@@ -623,14 +623,6 @@ public final class ControlCenterScreen extends Screen {
             listLastY = event.y();
             return true;
         }
-        if (page == Page.AUDIO && songSearch != null && inList(event.x(), event.y())) {
-            // ketuk memutar saat jari dilepas; geser menggulir daftar (layar sentuh tidak punya roda mouse)
-            listPress = true;
-            listDragged = false;
-            listPressY = event.y();
-            listLastY = event.y();
-            return true;
-        }
         return false;
     }
 
@@ -678,7 +670,7 @@ public final class ControlCenterScreen extends Screen {
             }
             return true;
         }
-        if (seeking && page == Page.AUDIO) {
+        if (seeking && (page == Page.AUDIO || page == Page.FAVORITES)) {
             seekAt(event.x());
             return true;
         }
