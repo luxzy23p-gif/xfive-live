@@ -23,7 +23,7 @@ public final class XFiveConfig {
     public int islandH = 84;            // tinggi kartu, 60..160
     public int islandColor = 0;         // 0 ikut tema, 1..5 warna tetap
     public boolean islandShowPaused = false;
-    public boolean islandAutoHide = true;  // kartu menutup sendiri setelah beberapa detik
+    public boolean islandAutoHide = false;  // kartu menutup sendiri setelah beberapa detik
     public int islandShowSec = 5;          // lama kartu terbuka, 2..30 detik
     public boolean islandCard = true;   // true = kartu lengkap, false = pil kecil
 

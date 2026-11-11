@@ -45,21 +45,20 @@ Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manua
 
 ## Control Center (semua dalam satu jendela)
 
-Tekan **F6** untuk langsung ke Audio (daftar lagu + pemutar), atau **Right Shift** untuk Home. Mouse otomatis aktif saat jendela terbuka. Isinya:
+Tekan **F6** untuk langsung ke Audio (daftar lagu + pemutar), atau **Right Shift** untuk Home. Mouse otomatis aktif saat jendela terbuka. Menu di kiri:
 
-- **Home**: ringkasan lagu, tombol cepat HUD, Dynamic Island, lirik, chat, ulang, acak.
-- **Audio**: daftar lagu bergaya playlist. Geser dengan jari, ketuk lagu untuk memutar, ketik di kotak cari. Tekan **+ Add**, isi path folder atau file lagu (contoh `/storage/emulated/0/Music`), lalu **Save**.
-- **HUD**: nyalakan atau matikan tiap HUD, atur HUD opacity, ukuran lirik, lebar dan tinggi Dynamic Island. **Drag HUD** membuka mode edit: geser kotak HUD dengan jari, tarik titik di pojok kanan bawah Island untuk mengubah ukuran, lalu tekan **Done**.
-- **Custom Controls**: bentuk Island (Card atau Pill), warna, Auto hide, lama pop-up, ulang, acak, berhenti, volume.
+- **Home**: pintasan ke semua halaman.
+- **Audio**: daftar lagu. Geser dengan jari untuk menggulir, ketuk lagu untuk memutar, ketik di kotak cari. Isi path folder atau file di kotak kiri lalu tekan **+** untuk menambah lagu (contoh `/storage/emulated/0/Music`). Bar di bawah: prev, play/pause, next, repeat, shuffle, volume, dan progres lagu (ketuk atau geser).
+- **HUD**: nyalakan atau matikan tiap HUD, atur HUD opacity, lebar dan tinggi Dynamic Island. **Drag HUD** membuka mode geser: tahan dan geser kotak HUD dengan jari.
+- **Custom Controls**: bentuk Island (Card atau Pill), warna, Auto hide, lama pop-up, tampil saat jeda, repeat, shuffle.
 - **Appearance**: warna aksen, Glass opacity, Animations.
-- **Settings**: aktifkan mod, putar otomatis, segarkan daftar lagu, folder dan status.
-- **Bar pemutar di bawah**: sebelumnya, putar/jeda, berikutnya, progres lagu (ketuk atau geser), shuffle, repeat, dan volume.
+- **Settings**: aktifkan mod, putar otomatis, tampilkan artwork.
 
-Tekan **Close** atau Esc untuk keluar. Semua pengaturan tersimpan otomatis.
+Tekan **Close** atau Esc untuk keluar. Pengaturan tersimpan otomatis.
 
 ## Dynamic Island
 
-Saat lagu mulai, berganti, atau dijeda, kapsul kecil muncul di atas layar, membuka menjadi kartu, lalu menutup sendiri setelah beberapa detik. Di **Custom Controls** kamu bisa mematikan **Auto hide** agar kartu tetap tampil, memilih Card atau Pill, dan mengatur lama tampil.
+Saat lagu diputar, kapsul kecil muncul di atas layar, membuka menjadi kartu, dan menutup kembali saat musik berhenti. Di **Custom Controls**, nyalakan **Auto hide pop-up** agar kartu hanya muncul beberapa detik setiap lagu mulai atau berganti. Atur lamanya dengan **Pop-up time**.
 
 ## Opsional: lagu dari folder lain
 

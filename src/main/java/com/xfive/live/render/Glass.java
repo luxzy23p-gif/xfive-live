@@ -3,9 +3,8 @@ package com.xfive.live.render;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
- * Gambar bergaya "liquid glass" yang ringan: kaca gelap transparan dengan kilap di atas,
- * garis tepi terang di sisi atas, dan bayangan tipis. Semuanya hanya fill per baris,
- * tanpa shader, tanpa tekstur, tanpa alokasi per frame.
+ * Gambar panel gelap yang elegan dan ringan: hanya beberapa fill per panel (tanpa gradien per baris,
+ * tanpa shader, tanpa tekstur, tanpa alokasi per frame), jadi aman untuk HP.
  * BELUM DIVERIFIKASI terhadap jar Minecraft 26.2 (lihat README).
  */
 public final class Glass {
@@ -41,21 +40,32 @@ public final class Glass {
         return Math.round(r - (float) Math.sqrt(Math.max(0f, r * r - d * d)));
     }
 
-    /** Persegi membulat berisi gradien vertikal dari warna atas ke warna bawah. */
+    /**
+     * Persegi membulat dua nada (warna atas di separuh atas, warna bawah di separuh bawah).
+     * Hanya baris sudut yang digambar satu per satu, bagian tengah cukup satu atau dua fill.
+     */
     public static void roundRect(GuiGraphicsExtractor g, int x, int y, int w, int h, int r, int top, int bottom) {
         if (w <= 0 || h <= 0) {
             return;
         }
         r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-        int band = h > 90 ? 2 : 1; // panel tinggi digambar per dua baris agar lebih ringan
-        int i = 0;
-        while (i < h) {
-            boolean corner = i < r || i >= h - r;
-            int step = corner ? 1 : Math.min(band, h - i - r > 0 ? h - i - r : 1);
+        int half = h / 2;
+        for (int i = 0; i < r; i++) {
             int ins = inset(i, h, r);
-            float t = h <= 1 ? 0f : (float) i / (h - 1);
-            g.fill(x + ins, y + i, x + w - ins, y + i + step, mix(top, bottom, t));
-            i += step;
+            g.fill(x + ins, y + i, x + w - ins, y + i + 1, i < half ? top : bottom);
+            int j = h - 1 - i;
+            g.fill(x + ins, y + j, x + w - ins, y + j + 1, j < half ? top : bottom);
+        }
+        int midTop = y + r;
+        int midBot = y + h - r;
+        if (midBot > midTop) {
+            int split = Math.max(midTop, Math.min(midBot, y + half));
+            if (split > midTop) {
+                g.fill(x, midTop, x + w, split, top);
+            }
+            if (midBot > split) {
+                g.fill(x, split, x + w, midBot, bottom);
+            }
         }
     }
 
@@ -63,24 +73,37 @@ public final class Glass {
         roundRect(g, x, y, w, h, r, argb, argb);
     }
 
-    /** Garis tepi 1 piksel mengikuti sudut membulat, dengan gradien atas ke bawah. */
+    /** Garis tepi 1 piksel mengikuti sudut membulat (warna atas untuk separuh atas, bawah untuk separuh bawah). */
     public static void border(GuiGraphicsExtractor g, int x, int y, int w, int h, int r, int top, int bottom) {
         if (w <= 2 || h <= 2) {
             return;
         }
         r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-        for (int i = 0; i < h; i++) {
-            int ins = inset(i, h, r);
-            float t = (float) i / (h - 1);
-            int c = mix(top, bottom, t);
-            if (i == 0 || i == h - 1) {
-                g.fill(x + ins, y + i, x + w - ins, y + i + 1, c);
-                continue;
+        g.fill(x + r, y, x + w - r, y + 1, top);
+        g.fill(x + r, y + h - 1, x + w - r, y + h, bottom);
+        int half = h / 2;
+        int a = y + r;
+        int b = y + h - r;
+        if (b > a) {
+            int split = Math.max(a, Math.min(b, y + half));
+            if (split > a) {
+                g.fill(x, a, x + 1, split, top);
+                g.fill(x + w - 1, a, x + w, split, top);
             }
-            int next = i < h / 2 ? inset(i + 1, h, r) : inset(i - 1, h, r);
-            int run = Math.max(1, ins - next + 1);
-            g.fill(x + ins, y + i, x + ins + run, y + i + 1, c);
-            g.fill(x + w - ins - run, y + i, x + w - ins, y + i + 1, c);
+            if (b > split) {
+                g.fill(x, split, x + 1, b, bottom);
+                g.fill(x + w - 1, split, x + w, b, bottom);
+            }
+        }
+        for (int i = 0; i < r; i++) {
+            int ins = inset(i, h, r);
+            int c = i < half ? top : bottom;
+            g.fill(x + ins, y + i, x + ins + 1, y + i + 1, c);
+            g.fill(x + w - ins - 1, y + i, x + w - ins, y + i + 1, c);
+            int j = h - 1 - i;
+            int c2 = j < half ? top : bottom;
+            g.fill(x + ins, y + j, x + ins + 1, y + j + 1, c2);
+            g.fill(x + w - ins - 1, y + j, x + w - ins, y + j + 1, c2);
         }
     }
 
@@ -92,32 +115,17 @@ public final class Glass {
     }
 
     /**
-     * Panel kaca: bayangan lembut, badan gradien dengan kilap di bagian atas,
-     * garis kilau di tepi atas, dan rim terang. alpha 0..1 mengatur kepekatan keseluruhan.
+     * Panel gelap elegan: badan dua nada (biru gelap ke hampir hitam), garis kilau tipis di tepi atas,
+     * garis aksen tipis di bawah, dan tepi halus. Sekitar 30 fill saja.
      */
     public static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h, int r, float alpha, int accent) {
         if (alpha <= 0.01f || w <= 2 || h <= 2) {
             return;
         }
         r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-        roundRect(g, x, y + 2, w, h, r, argb(0x000000, 0.20f * alpha));                  // bayangan
-        roundRect(g, x, y, w, h, r, argb(0x3A4466, 0.66f * alpha), argb(0x0B0E19, 0.84f * alpha)); // badan
-        int gloss = Math.max(2, h * 2 / 5);                                                 // kilap atas
-        roundRect(g, x + 1, y + 1, w - 2, gloss, Math.max(0, r - 1),
-                argb(0xFFFFFF, 0.13f * alpha), argb(0xFFFFFF, 0.01f * alpha));
-        roundRect(g, x + r / 2 + 1, y + h - 3, Math.max(2, w - r - 2), 2, 1, argb(accent, 0.16f * alpha)); // cahaya aksen bawah
-        border(g, x, y, w, h, r, argb(0xFFFFFF, 0.50f * alpha), argb(0xFFFFFF, 0.10f * alpha));
-    }
-
-    /** Kaca untuk kontrol kecil (tombol, baris). lift 0..1 menambah terang saat disorot atau ditekan. */
-    public static void control(GuiGraphicsExtractor g, int x, int y, int w, int h, int r, float alpha,
-                               float lift, int tint, float tintAmount) {
-        if (alpha <= 0.01f || w <= 2 || h <= 2) {
-            return;
-        }
-        int top = mix(argb(0xFFFFFF, (0.20f + 0.14f * lift) * alpha), argb(tint, 0.70f * alpha), tintAmount);
-        int bot = mix(argb(0xFFFFFF, (0.07f + 0.08f * lift) * alpha), argb(tint, 0.40f * alpha), tintAmount);
-        roundRect(g, x, y, w, h, r, top, bot);
-        border(g, x, y, w, h, r, argb(0xFFFFFF, (0.45f + 0.2f * lift) * alpha), argb(0xFFFFFF, 0.12f * alpha));
+        roundRect(g, x, y, w, h, r, argb(0x1A1E2C, 0.90f * alpha), argb(0x0A0C13, 0.94f * alpha));
+        g.fill(x + r + 1, y + 1, x + w - r - 1, y + 2, argb(0xFFFFFF, 0.10f * alpha));
+        g.fill(x + r + 2, y + h - 2, x + w - r - 2, y + h - 1, argb(accent, 0.55f * alpha));
+        border(g, x, y, w, h, r, argb(0xFFFFFF, 0.20f * alpha), argb(0xFFFFFF, 0.07f * alpha));
     }
 }
