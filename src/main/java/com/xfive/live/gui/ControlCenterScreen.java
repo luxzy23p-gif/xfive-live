@@ -129,7 +129,7 @@ public final class ControlCenterScreen extends Screen {
         winY = 8 + oy;
         winW = width - 16;
         winH = height - 16;
-        sideW = Math.max(104, Math.min(134, width / 5));
+        sideW = Math.max(116, Math.min(140, width / 5));
         mainX = winX + sideW + 6;
         mainW = winX + winW - 6 - mainX;
         barY = winY + winH - 6 - barH;
