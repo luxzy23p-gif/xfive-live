@@ -45,6 +45,8 @@ public final class XFiveConfig {
 
     // Appearance
     public String theme = "purple"; // lihat Themes.IDS
+    /** UI skin: glass (Liquid Glass Lite) atau dark_music (matte music-player style). */
+    public String themeStyle = "glass";
     public float customTransparency = 0.85f;
     public boolean animations = true;
 
@@ -109,6 +111,7 @@ public final class XFiveConfig {
         lyricsMinimal = bool(p, "lyrics.minimal", lyricsMinimal);
 
         theme = Themes.normalize(p.getProperty("appearance.theme", theme));
+        themeStyle = "dark_music".equals(p.getProperty("appearance.style", themeStyle).strip()) ? "dark_music" : "glass";
         customTransparency = flt(p, "appearance.transparency", customTransparency, 0.1f, 1f);
         animations = bool(p, "appearance.animations", animations);
 
@@ -149,6 +152,7 @@ public final class XFiveConfig {
         put(p, "lyrics.minimal", lyricsMinimal);
 
         put(p, "appearance.theme", theme);
+        put(p, "appearance.style", themeStyle);
         put(p, "appearance.transparency", customTransparency);
         put(p, "appearance.animations", animations);
 
