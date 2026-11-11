@@ -134,7 +134,9 @@ public final class DynamicIslandHud {
         int w = Math.max(capW, Math.round(capW + (b[2] - capW) * ew));
         int h = Math.max(capH, Math.round(capH + (b[3] - capH) * eh));
         int x = b[0] + (b[2] - w) / 2;
-        int y = b[1];
+        // Saat menutup, kartu naik sedikit sambil mengecil kembali menjadi kapsul.
+        // Offset mengikuti kurva tinggi agar gerakan tetap kontinu dan tidak meloncat.
+        int y = b[1] - (opening ? 0 : Math.round((1f - eh) * 12f));
         float alpha = clamp01(t / 0.12f) * c.hudOpacity * Math.max(0.35f, c.customTransparency);
 
         String title;
@@ -322,7 +324,7 @@ public final class DynamicIslandHud {
     }
 
     private static float easeOutBack(float v) {
-        float c1 = 1.1f;
+        float c1 = 1.35f; // overshoot spring lebih terasa, tetap dibatasi kurva easing
         float c3 = c1 + 1f;
         float u = v - 1f;
         return 1f + c3 * u * u * u + c1 * u * u;
