@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.xfive.live.XFiveLiveClient;
+import com.xfive.live.music.PlaylistManager;
 import com.xfive.live.render.GlassPanelRenderer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
