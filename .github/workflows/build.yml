@@ -26,8 +26,12 @@ jobs:
       - name: Build mod jar
         run: gradle build --no-daemon
 
+      - name: Read mod version
+        id: ver
+        run: echo "v=$(grep '^mod_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
-          name: XFiveLive-1.0.0
+          name: XFiveLive-${{ steps.ver.outputs.v }}
           path: build/libs/*.jar
