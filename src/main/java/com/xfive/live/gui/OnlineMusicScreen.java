@@ -9,9 +9,9 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
@@ -49,47 +49,70 @@ public final class OnlineMusicScreen extends Screen {
     private volatile String status = "Search Audius tracks by title or artist.";
     private volatile boolean searching;
     private volatile boolean busy;
-    private final List<Button> playButtons = new ArrayList<>();
-    private final List<Button> downloadButtons = new ArrayList<>();
 
     public OnlineMusicScreen() { super(Component.literal("XFiveLive Online Music")); }
 
-    private int px() { return Math.max(8, (width - Math.min(720, width - 16)) / 2); }
-    private int py() { return Math.max(8, (height - Math.min(430, height - 16)) / 2); }
-    private int pw() { return Math.min(720, width - 16); }
-    private int ph() { return Math.min(430, height - 16); }
-    private int left() { return px() + 18; }
-    private int right() { return px() + pw() - 18; }
-    private int listTop() { return py() + 92; }
+    private int px() { return Math.max(8, (width - Math.min(900, width - 16)) / 2); }
+    private int py() { return Math.max(8, (height - Math.min(560, height - 16)) / 2); }
+    private int pw() { return Math.min(900, width - 16); }
+    private int ph() { return Math.min(560, height - 16); }
+    private int sidebarW() { return Math.max(112, Math.min(166, pw() / 5)); }
+    private int contentX() { return px() + sidebarW() + 22; }
+    private int contentRight() { return px() + pw() - 22; }
+    private int contentW() { return contentRight() - contentX(); }
+    private int searchY() { return py() + 70; }
+    private int searchButtonX() { return contentRight() - 82; }
+    private int listTop() { return py() + 142; }
+    private int rowHeight() { return 43; }
+    private int visibleRows() { return Math.max(1, Math.min(8, (py() + ph() - 86 - listTop()) / rowHeight())); }
 
     @Override protected void init() {
-        int x = left(), y = py() + 43, w = right() - left();
-        int searchW = Math.min(76, Math.max(58, w / 5));
-        queryBox = new EditBox(GlassPanelRenderer.font(), x, y, w - searchW - 6, 20,
-                Component.literal("Search Audius music"));
+        int inputX = contentX() + 12;
+        int inputW = Math.max(50, searchButtonX() - inputX - 10);
+        queryBox = new EditBox(GlassPanelRenderer.font(), inputX + 25, searchY() + 4,
+                inputW - 30, 20, Component.literal("Search music"));
         queryBox.setMaxLength(100);
-        queryBox.setHint(Component.literal("Song title or artist"));
+        queryBox.setHint(Component.literal("Search song title or artist"));
+        queryBox.setBordered(false);
+        queryBox.setTextColor(0xF2F3F7);
+        queryBox.setTextColorUneditable(0x8D929E);
         addRenderableWidget(queryBox);
-        addRenderableWidget(Button.builder(Component.literal("Search"), b -> search())
-                .bounds(x + w - searchW, y, searchW, 20).build());
+    }
 
-        int rows = Math.min(7, Math.max(3, (ph() - 145) / 34));
-        for (int i = 0; i < rows; i++) {
-            final int index = i;
-            Button play = Button.builder(Component.literal("Play"), b -> playOnline(index))
-                    .bounds(right() - 132, listTop() + i * 34 + 4, 60, 22).build();
-            Button download = Button.builder(Component.literal("Save"), b -> download(index))
-                    .bounds(right() - 66, listTop() + i * 34 + 4, 60, 22).build();
-            play.active = false;
-            download.active = false;
-            playButtons.add(play);
-            downloadButtons.add(download);
-            addRenderableWidget(play);
-            addRenderableWidget(download);
+    private boolean inside(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx <= x + w && my >= y && my <= y + h;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (super.mouseClicked(event, doubleClick)) return true;
+        double mx = event.x(), my = event.y();
+        int sx = px(), sy = py();
+        int navX = sx + 12, navW = sidebarW() - 24;
+        if (inside(mx, my, navX, sy + 112, navW, 30)) {
+            Minecraft.getInstance().setScreenAndShow(new ControlCenterScreen());
+            return true;
         }
-        addRenderableWidget(Button.builder(Component.literal("Back"),
-                b -> Minecraft.getInstance().setScreenAndShow(ControlCenterScreen.audio()))
-                .bounds(px() + 18, py() + ph() - 34, 72, 22).build());
+        if (inside(mx, my, navX, sy + 148, navW, 30)) return true;
+        if (inside(mx, my, navX, sy + 184, navW, 30)) {
+            Minecraft.getInstance().setScreenAndShow(ControlCenterScreen.audio());
+            return true;
+        }
+        if (inside(mx, my, searchButtonX(), searchY(), 82, 30)) {
+            search();
+            return true;
+        }
+        for (int i = 0; i < visibleRows(); i++) {
+            int ry = listTop() + i * rowHeight();
+            if (inside(mx, my, contentX(), ry, contentW(), rowHeight() - 3)) {
+                Track track = getTrack(i);
+                if (track == null) return true;
+                if (mx >= contentRight() - 148 && mx < contentRight() - 78) playOnline(i);
+                else if (mx >= contentRight() - 76) download(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void search() {
@@ -278,35 +301,89 @@ public final class OnlineMusicScreen extends Screen {
 
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         int x = px(), y = py(), w = pw(), h = ph();
-        List<Track> snapshot = results;
-        for (int i = 0; i < playButtons.size(); i++) {
-            Track t = i < snapshot.size() ? snapshot.get(i) : null;
-            playButtons.get(i).active = !busy && t != null && t.streamable();
-            downloadButtons.get(i).active = !busy && t != null && t.downloadable();
-        }
-        int accent = GlassPanelRenderer.accent(XFiveLiveClient.CONFIG.theme);
-        GlassPanelRenderer.panel(g, x, y, w, h, XFiveLiveClient.CONFIG.customTransparency, accent);
+        int accent = 0xA86BFF;
+        int muted = 0xA2A5B0;
         Font font = GlassPanelRenderer.font();
-        GlassPanelRenderer.text(g, font, "ONLINE MUSIC", x + 18, y + 16, accent);
-        GlassPanelRenderer.text(g, font, "Search • stream • creator-enabled downloads",
-                x + 18, y + 29, GlassPanelRenderer.MUTED);
-        super.extractRenderState(g, mouseX, mouseY, partialTick);
-        GlassPanelRenderer.text(g, font, status, left(), py() + 72, GlassPanelRenderer.WHITE);
-        int rows = Math.min(7, Math.max(3, (h - 145) / 34));
-        for (int i = 0; i < rows && i < snapshot.size(); i++) {
-            Track t = snapshot.get(i);
-            int ry = listTop() + i * 34;
-            String title = t.title().length() > 35 ? t.title().substring(0, 34) + "…" : t.title();
-            String artist = t.artist() + (t.duration() > 0
-                    ? " • " + t.duration() / 60 + ":" + String.format(Locale.ROOT, "%02d", t.duration() % 60) : "");
-            GlassPanelRenderer.text(g, font, title, left() + 7, ry + 3, GlassPanelRenderer.WHITE);
-            GlassPanelRenderer.text(g, font, artist.length() > 36 ? artist.substring(0, 35) + "…" : artist,
-                    left() + 7, ry + 16, GlassPanelRenderer.MUTED);
+        List<Track> snapshot = results;
+
+        // Premium charcoal shell and permanently dark left navigation rail.
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, 0x55000000);
+        g.fill(x, y, x + w, y + h, 0xF018191E);
+        g.fill(x, y, x + sidebarW(), y + h, 0xF0101116);
+        g.fill(x + sidebarW(), y + 14, x + sidebarW() + 1, y + h - 14, 0x22FFFFFF);
+        g.fill(x + 12, y + 12, x + 42, y + 42, 0xFF292B34);
+        GlassPanelRenderer.text(g, font, "X", x + 22, y + 21, accent);
+        GlassPanelRenderer.text(g, font, "XFIVE", x + 50, y + 15, 0xF4F4F7);
+        GlassPanelRenderer.text(g, font, "MUSIC", x + 50, y + 29, muted);
+
+        GlassPanelRenderer.text(g, font, "MENU", x + 15, y + 78, 0x777D8A);
+        String[] nav = {"Home", "Online Music", "Local Library"};
+        int[] navY = {y + 112, y + 148, y + 184};
+        for (int i = 0; i < nav.length; i++) {
+            boolean selected = i == 1;
+            if (selected) {
+                g.fill(x + 7, navY[i] + 2, x + sidebarW() - 8, navY[i] + 29, 0x332B1640);
+                g.fill(x + 7, navY[i] + 3, x + 10, navY[i] + 27, accent);
+            }
+            String symbol = i == 0 ? "⌂" : i == 1 ? "♫" : "▤";
+            GlassPanelRenderer.text(g, font, symbol, x + 19, navY[i] + 10, selected ? accent : muted);
+            GlassPanelRenderer.text(g, font, nav[i], x + 39, navY[i] + 10,
+                    selected ? 0xF4F4F7 : muted);
         }
-        GlassPanelRenderer.text(g, font, "Play Online uses a temporary cache; Save stores allowed tracks in xfive-music.",
-                left(), y + h - 52, GlassPanelRenderer.MUTED);
-        GlassPanelRenderer.text(g, font, "Only tracks whose creators enable downloads can be saved.",
-                left(), y + h - 40, GlassPanelRenderer.MUTED);
+
+        g.fill(x + 14, y + h - 74, x + sidebarW() - 14, y + h - 73, 0x22FFFFFF);
+        GlassPanelRenderer.text(g, font, "NOW PLAYING", x + 15, y + h - 60, 0x777D8A);
+        PlaylistManager.Track current = XFiveLiveClient.MUSIC.currentTrack();
+        String now = current == null ? "Nothing playing" : current.title();
+        GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(now, 18), x + 15, y + h - 43, 0xDDE0E8);
+        GlassPanelRenderer.text(g, font, "Saved in xfive-music", x + 15, y + h - 24, muted);
+
+        // Main content header.
+        GlassPanelRenderer.text(g, font, "ONLINE MUSIC", contentX(), y + 20, 0xF4F4F7);
+        GlassPanelRenderer.text(g, font, "Discover and play music from independent artists",
+                contentX(), y + 36, muted);
+
+        // Recessed rounded search field, built from layered rectangles for vanilla GUI compatibility.
+        int searchX = contentX() + 7, searchY = searchY(), searchW = searchButtonX() - searchX - 10;
+        g.fill(searchX - 1, searchY - 1, searchX + searchW + 1, searchY + 31, 0xFF08090D);
+        g.fill(searchX + 1, searchY + 1, searchX + searchW - 1, searchY + 29, 0xFF25262D);
+        GlassPanelRenderer.text(g, font, "⌕", searchX + 10, searchY + 9, 0xAEB3C0);
+        g.fill(searchButtonX(), searchY, searchButtonX() + 82, searchY + 30, 0xFF343640);
+        g.fill(searchButtonX(), searchY, searchButtonX() + 82, searchY + 1, 0x557E8290);
+        GlassPanelRenderer.text(g, font, "Search", searchButtonX() + 17, searchY + 10, 0xF0F1F5);
+
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+        GlassPanelRenderer.text(g, font, status, contentX() + 7, y + 112,
+                busy || searching ? accent : muted);
+
+        int rows = visibleRows();
+        for (int i = 0; i < rows; i++) {
+            int ry = listTop() + i * rowHeight();
+            Track t = i < snapshot.size() ? snapshot.get(i) : null;
+            boolean hover = mouseX >= contentX() && mouseX <= contentRight()
+                    && mouseY >= ry && mouseY <= ry + rowHeight() - 3;
+            g.fill(contentX() + 2, ry, contentRight() - 2, ry + rowHeight() - 3,
+                    hover ? 0xFF292B34 : 0xFF202127);
+            if (t == null) continue;
+            String title = GlassPanelRenderer.trim(t.title(), 38);
+            String artist = GlassPanelRenderer.trim(t.artist(), 34);
+            GlassPanelRenderer.text(g, font, title, contentX() + 14, ry + 7, 0xF0F1F5);
+            String detail = artist + (t.duration() > 0 ? "  •  " + t.duration() / 60 + ":"
+                    + String.format(Locale.ROOT, "%02d", t.duration() % 60) : "");
+            GlassPanelRenderer.text(g, font, GlassPanelRenderer.trim(detail, 42),
+                    contentX() + 14, ry + 22, muted);
+
+            int playX = contentRight() - 148;
+            int saveX = contentRight() - 76;
+            g.fill(playX, ry + 9, playX + 64, ry + 31, t.streamable() && !busy ? 0xFF48404F : 0xFF303139);
+            g.fill(saveX, ry + 9, saveX + 66, ry + 31, t.downloadable() && !busy ? 0xFF48404F : 0xFF303139);
+            GlassPanelRenderer.text(g, font, "Play", playX + 17, ry + 16,
+                    t.streamable() && !busy ? 0xF4F4F7 : 0x777D8A);
+            GlassPanelRenderer.text(g, font, "Save", saveX + 17, ry + 16,
+                    t.downloadable() && !busy ? 0xF4F4F7 : 0x777D8A);
+        }
+        GlassPanelRenderer.text(g, font, "Play streams online • Save keeps creator-enabled downloads offline",
+                contentX() + 7, y + h - 30, muted);
     }
 
     @Override public boolean isPauseScreen() { return false; }
