@@ -20,7 +20,7 @@ Kalau folder itu belum ada, buat sendiri dengan nama persis `xfive-music` (huruf
 ## Langkah 3: Salin lagu ke dalam folder
 
 1. Salin file lagu ke dalam folder **xfive-music**.
-2. Format yang didukung: **.mp3**, **.ogg**, dan **.wav**.
+2. Format yang didukung: **.mp3**, **.m4a**, **.ogg**, dan **.wav**.
 3. Beri nama file dengan pola **Artis - Judul.mp3**, misalnya `Adele - Hello.mp3`.
    Dengan pola ini, nama artis dan judul tampil di HUD.
 4. (Opsional) Lirik bisa ditaruh di file **Artis - Judul.lrc** di folder yang sama.
@@ -28,7 +28,7 @@ Kalau folder itu belum ada, buat sendiri dengan nama persis `xfive-music` (huruf
 ### Cara memasukkan lagu dari file ZIP
 
 1. Unduh lagu dalam bentuk ZIP seperti biasa.
-2. Buka aplikasi **File**, lalu ekstrak (unzip) file ZIP tersebut. Hasilnya berupa file .mp3, .ogg, atau .wav.
+2. Buka aplikasi **File**, lalu ekstrak (unzip) file ZIP tersebut. Hasilnya berupa file .mp3, .m4a, .ogg, atau .wav.
 3. Salin file-file lagu itu ke folder **xfive-music** (lihat Langkah 2).
 4. Buka game, lalu tekan **Right Shift**. Daftar lagu diperbarui otomatis setiap menu dibuka, jadi **tidak perlu restart atau muat ulang Minecraft**.
 5. Di menu, perhatikan baris **Folder lagu** dan **Jumlah lagu**. Baris itu menampilkan lokasi folder yang sedang dipakai dan berapa lagu yang terbaca.
@@ -51,7 +51,7 @@ Tekan **F6** untuk langsung ke Audio (daftar lagu + pemutar), atau **Right Shift
 - **Audio**: daftar lagu. Geser dengan jari untuk menggulir, ketuk lagu untuk memutar, ketik di kotak cari. Isi path folder atau file di kotak kiri lalu tekan **+** untuk menambah lagu (contoh `/storage/emulated/0/Music`). Bar di bawah: prev, play/pause, next, repeat, shuffle, volume, dan progres lagu (ketuk atau geser).
 - **HUD**: nyalakan atau matikan tiap HUD, atur HUD opacity, lebar dan tinggi Dynamic Island. **Drag HUD** membuka mode geser: tahan dan geser kotak HUD dengan jari.
 - **Custom Controls**: bentuk Island (Card atau Pill), warna, Auto hide, lama pop-up, tampil saat jeda, repeat, shuffle.
-- **Appearance**: warna aksen, Glass opacity, Animations.
+- **Appearance**: 8 tema warna (Purple, Cyan, Rose, Emerald, Amber, Ocean, Crimson, Mono). Ketuk kotak warna untuk mengganti. Tema dipakai di Control Center dan semua HUD. Juga ada Glass opacity dan Animations.
 - **Settings**: aktifkan mod, putar otomatis, tampilkan artwork.
 
 Tekan **Close** atau Esc untuk keluar. Pengaturan tersimpan otomatis.
@@ -78,7 +78,7 @@ Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke fol
 
 ## Kalau musik tidak berbunyi
 
-- Pastikan formatnya benar-benar MP3, OGG, atau WAV. Mengganti nama file dari .m4a atau .webm menjadi .mp3 tidak membuat file itu jadi MP3. Kalau status menulis "M4A" atau "WebM", ubah file itu dengan aplikasi konverter ke MP3 atau OGG.
+- Pastikan formatnya benar-benar MP3, M4A (AAC), OGG, atau WAV. Mengganti nama file .webm menjadi .mp3 tidak membuat file itu jadi MP3. M4A berisi Apple Lossless (ALAC) dan file AAC mentah (.aac) belum didukung; ubah dengan aplikasi konverter ke M4A (AAC) atau MP3.
 - Kalau status menulis "tidak berisi audio", file-nya kemungkinan rusak atau tidak lengkap. Coba salin ulang dari sumbernya.
 - Coba dulu dengan lagu pendek (1 sampai 3 menit). Lagu sangat panjang butuh memori besar.
 - Lihat tulisan status di menu X FIVE LIVE. Di sana tertulis alasannya, misalnya "Format tidak didukung" atau "Belum ada lagu".

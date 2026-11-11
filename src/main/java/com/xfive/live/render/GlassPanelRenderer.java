@@ -24,7 +24,7 @@ public final class GlassPanelRenderer {
     }
 
     public static int accent(String theme) {
-        return "cyan".equals(theme) ? CYAN : PURPLE;
+        return com.xfive.live.config.Themes.accent(theme);
     }
 
     public static Font font() {

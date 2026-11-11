@@ -123,7 +123,9 @@ public final class Glass {
             return;
         }
         r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-        roundRect(g, x, y, w, h, r, argb(0x1A1E2C, 0.90f * alpha), argb(0x0A0C13, 0.94f * alpha));
+        // warna aksen tema memberi rona tipis pada badan panel
+        roundRect(g, x, y, w, h, r, mix(argb(0x1A1E2C, 0.90f * alpha), argb(accent, 0.90f * alpha), 0.10f),
+                mix(argb(0x0A0C13, 0.94f * alpha), argb(accent, 0.94f * alpha), 0.04f));
         g.fill(x + r + 1, y + 1, x + w - r - 1, y + 2, argb(0xFFFFFF, 0.10f * alpha));
         g.fill(x + r + 2, y + h - 2, x + w - r - 2, y + h - 1, argb(accent, 0.55f * alpha));
         border(g, x, y, w, h, r, argb(0xFFFFFF, 0.20f * alpha), argb(0xFFFFFF, 0.07f * alpha));

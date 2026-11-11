@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  * (bukan per frame). Nama file "Artis - Judul.mp3" dibaca sebagai artis dan judul.
  */
 public final class PlaylistManager {
-    public static final List<String> SUPPORTED_EXTENSIONS = List.of(".mp3", ".wav", ".ogg");
+    public static final List<String> SUPPORTED_EXTENSIONS = List.of(".mp3", ".m4a", ".wav", ".ogg");
 
     public record Track(Path path, String title, String artist) {
     }

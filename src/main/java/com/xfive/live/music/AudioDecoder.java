@@ -25,7 +25,8 @@ import java.util.Locale;
 /**
  * Mengubah file audio menjadi PCM 16-bit. Format dikenali dari ISI file (bukan dari nama),
  * jadi file yang namanya .mp3 tapi isinya OGG tetap bisa dibaca.
- * WAV dibaca manual, OGG lewat stb_vorbis (bawaan LWJGL Minecraft), MP3 lewat JLayer.
+ * WAV dibaca manual, OGG lewat stb_vorbis (bawaan LWJGL Minecraft), MP3 lewat JLayer,
+ * M4A (AAC) lewat JAAD. Semuanya Java murni atau bawaan Minecraft, jadi jalan di Android.
  * BELUM DIVERIFIKASI terhadap jar Minecraft 26.2 (lihat README).
  */
 public final class AudioDecoder {
@@ -38,7 +39,7 @@ public final class AudioDecoder {
 
     public static boolean supports(String fileName) {
         String n = fileName.toLowerCase(Locale.ROOT);
-        return n.endsWith(".wav") || n.endsWith(".ogg") || n.endsWith(".mp3");
+        return n.endsWith(".wav") || n.endsWith(".ogg") || n.endsWith(".mp3") || n.endsWith(".m4a");
     }
 
     public static Pcm decode(Path file) throws IOException {
@@ -57,12 +58,15 @@ public final class AudioDecoder {
             return decodeWav(data);
         }
         if (format.equals("m4a")) {
-            throw new IOException("File ini format M4A/AAC, bukan MP3. Ubah ke MP3, OGG, atau WAV.");
+            if (data.length >= 8 && data[4] == 'f' && data[5] == 't' && data[6] == 'y' && data[7] == 'p') {
+                return decodeM4a(file);
+            }
+            throw new IOException("File AAC mentah (.aac) belum didukung. Pakai M4A, MP3, OGG, atau WAV.");
         }
         if (format.equals("webm")) {
             throw new IOException("File ini format WebM/Opus, bukan MP3. Ubah ke MP3, OGG, atau WAV.");
         }
-        throw new IOException("Format tidak dikenali (" + data.length + " byte). Gunakan MP3, OGG, atau WAV.");
+        throw new IOException("Format tidak dikenali (" + data.length + " byte). Gunakan MP3, M4A, OGG, atau WAV.");
     }
 
     /** Mendeteksi format dari beberapa byte pertama file. */
@@ -188,6 +192,70 @@ public final class AudioDecoder {
             off += c.length;
         }
         return new Pcm(all, channels, rate);
+    }
+
+    /** M4A (AAC-LC / HE-AAC di kontainer MP4). ALAC (Apple Lossless) tidak didukung. */
+    private static Pcm decodeM4a(Path file) throws IOException {
+        short[] out = new short[1 << 20];
+        int count = 0;
+        int channels = 0;
+        int rate = 0;
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file.toFile(), "r")) {
+            net.sourceforge.jaad.mp4.MP4Container container = new net.sourceforge.jaad.mp4.MP4Container(raf);
+            net.sourceforge.jaad.mp4.api.Movie movie = container.getMovie();
+            if (movie == null) {
+                throw new IOException("M4A tidak berisi data audio");
+            }
+            net.sourceforge.jaad.mp4.api.Track audio = null;
+            for (net.sourceforge.jaad.mp4.api.Track t : movie.getTracks()) {
+                if (t instanceof net.sourceforge.jaad.mp4.api.AudioTrack) {
+                    audio = t;
+                    break;
+                }
+            }
+            if (audio == null) {
+                throw new IOException("M4A tidak punya jalur audio");
+            }
+            net.sourceforge.jaad.aac.Decoder decoder;
+            try {
+                decoder = new net.sourceforge.jaad.aac.Decoder(audio.getDecoderSpecificInfo());
+            } catch (RuntimeException e) {
+                throw new IOException("M4A ini bukan AAC (mungkin Apple Lossless). Ubah ke AAC, MP3, OGG, atau WAV.", e);
+            }
+            net.sourceforge.jaad.aac.SampleBuffer buf = new net.sourceforge.jaad.aac.SampleBuffer();
+            net.sourceforge.jaad.mp4.api.Frame frame;
+            while ((frame = audio.readNextFrame()) != null) {
+                decoder.decodeFrame(frame.getData(), buf);
+                byte[] d = buf.getData();
+                if (d == null || d.length < 2) {
+                    continue;
+                }
+                if (channels == 0) {
+                    channels = Math.max(1, buf.getChannels());
+                    rate = buf.getSampleRate();
+                }
+                int n = d.length / 2;
+                if (count + n > out.length) {
+                    out = java.util.Arrays.copyOf(out, Math.max(out.length * 2, count + n));
+                }
+                boolean big = buf.isBigEndian();
+                for (int i = 0; i < n; i++) {
+                    int hi = d[i * 2];
+                    int lo = d[i * 2 + 1] & 0xFF;
+                    int a = d[i * 2] & 0xFF;
+                    int b = d[i * 2 + 1];
+                    out[count++] = big ? (short) ((hi << 8) | lo) : (short) ((b << 8) | a);
+                }
+            }
+        } catch (IOException e) {
+            throw e;
+        } catch (RuntimeException | OutOfMemoryError e) {
+            throw new IOException("M4A rusak atau tidak didukung: " + e.getMessage(), e);
+        }
+        if (count == 0 || channels == 0 || rate == 0) {
+            throw new IOException("M4A tidak berisi audio yang bisa dibaca");
+        }
+        return new Pcm(java.util.Arrays.copyOf(out, count), channels, rate);
     }
 
     private static String ascii(byte[] b, int off) {

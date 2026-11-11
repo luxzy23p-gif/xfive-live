@@ -1,7 +1,6 @@
 package com.xfive.live.tests;
 
-import com.xfive.live.chat.ChatManager;
-import com.xfive.live.chat.ChatMessage;
+import com.xfive.live.config.Themes;
 import com.xfive.live.config.XFiveConfig;
 import com.xfive.live.lyrics.LrcParser;
 import com.xfive.live.lyrics.LyricLine;
@@ -32,9 +31,9 @@ public final class XFiveTests {
         Files.createDirectories(work);
         testLrc();
         testLyricsIndex();
-        testChat();
         testPlaylist(work.resolve("playlist"));
         testConfig(work.resolve("config"));
+        testThemes();
         System.out.println("passed=" + passed + " failed=" + failed);
         if (failed > 0) {
             System.exit(1);
@@ -74,42 +73,6 @@ public final class XFiveTests {
         check("loadFile file tidak ada = false", !lm.loadFile(Path.of("tidak-ada-file-xyz.lrc")));
     }
 
-    static void testChat() {
-        ChatManager c = new ChatManager();
-        c.setMaxMessages(2);
-        c.setIntervalMs(100);
-        c.setDurationMs(5000);
-        c.addBlockedWord("BUY");
-
-        check("filter menolak kata terlarang (case-insensitive)", !c.submit("u", "buy now!!", 0));
-        check("pesan kosong ditolak", !c.submit("u", "   ", 0));
-        check("pesan diterima", c.submit(null, "a", 0));
-        c.submit("bob", "b", 0);
-        c.submit("cat", "c", 0);
-        check("pending = 3", c.pendingCount() == 3);
-
-        List<ChatMessage> out = new ArrayList<>();
-        c.update(50);           // rilis pertama langsung
-        check("rilis pertama langsung", c.copyVisibleTo(out) == 1);
-        c.update(100);          // jeda belum 100ms
-        check("jeda kecepatan ditahan", c.copyVisibleTo(out) == 1);
-        c.update(150);          // rilis b
-        c.update(250);          // rilis c, batas 2 membuang a
-        check("batas maksimum pesan = 2", c.copyVisibleTo(out) == 2);
-        check("pesan lama dibuang, sisa b dan c",
-                out.get(0).text().equals("b") && out.get(1).text().equals("c"));
-        check("username kosong jadi viewer", out.get(0).username().equals("bob"));
-
-        c.update(5200);         // b (rilis 150) sudah lewat 5000ms, c (rilis 250) belum
-        check("pesan kedaluwarsa dibuang", c.copyVisibleTo(out) == 1 && out.get(0).text().equals("c"));
-
-        ChatManager d = new ChatManager();
-        d.submit(null, "halo", 0);
-        d.update(1000);
-        d.copyVisibleTo(out);
-        check("username null menjadi viewer", out.size() == 1 && out.get(0).username().equals("viewer"));
-    }
-
     static void testPlaylist(Path dir) throws Exception {
         Files.createDirectories(dir);
         Files.writeString(dir.resolve("Adele - Hello.mp3"), "x");
@@ -137,6 +100,12 @@ public final class XFiveTests {
                 PlaylistManager.parse(Path.of("Adele - Hello (Official Video).mp3")).title().equals("Hello"));
         check("tag biasa di tengah judul tetap",
                 PlaylistManager.parse(Path.of("A - Song (Remix) Live.mp3")).title().equals("Song (Remix) Live"));
+        check("m4a termasuk format yang dipindai", PlaylistManager.SUPPORTED_EXTENSIONS.contains(".m4a"));
+        check("nama m4a dibaca artis dan judul", PlaylistManager.parse(Path.of("Dua Lipa - Levitating.m4a")).artist().equals("Dua Lipa")
+                && PlaylistManager.parse(Path.of("Dua Lipa - Levitating.m4a")).title().equals("Levitating"));
+        Files.writeString(dir.resolve("Extra - Aac.m4a"), "x");
+        check("scan menemukan file m4a (4 lagu)", new PlaylistManager().scan(dir) == 4);
+        Files.deleteIfExists(dir.resolve("Extra - Aac.m4a"));
         check("folder tidak ada = 0 lagu", new PlaylistManager().scan(dir.resolve("nope")) == 0);
         testScanSources(dir.resolveSibling("sources"));
     }
@@ -155,6 +124,13 @@ public final class XFiveTests {
         check("scanSources melewati sumber yang tidak ada", pm.size() == 2);
     }
 
+    static void testThemes() {
+        check("tema tidak dikenal jadi purple", Themes.normalize("xyz").equals("purple") && Themes.normalize(null).equals("purple"));
+        check("tema rose dikenal", Themes.normalize("rose").equals("rose") && Themes.accent("rose") == 0xFF5C8A);
+        check("tema berputar kembali ke awal", Themes.next(Themes.IDS[Themes.IDS.length - 1]).equals("purple"));
+        check("jumlah id, nama, warna sama", Themes.IDS.length == Themes.NAMES.length && Themes.IDS.length == Themes.COLORS.length);
+    }
+
     static void testConfig(Path dir) throws Exception {
         Files.createDirectories(dir);
         XFiveConfig a = new XFiveConfig(dir);
@@ -162,7 +138,7 @@ public final class XFiveTests {
         a.lyricsFontSize = 14;
         a.theme = "cyan";
         a.musicFolder = "/music";
-        a.hudPositions.get("chatHud")[1] = 77;
+        a.hudPositions.get("musicHud")[1] = 77;
         a.islandW = 300;
         a.islandH = 100;
         a.islandColor = 3;
@@ -180,7 +156,7 @@ public final class XFiveTests {
         check("config fontSize tersimpan", b.lyricsFontSize == 14);
         check("config theme tersimpan", b.theme.equals("cyan"));
         check("config folder tersimpan", b.musicFolder.equals("/music"));
-        check("config posisi HUD tersimpan", b.hudPositions.get("chatHud")[1] == 77);
+        check("config posisi HUD tersimpan", b.hudPositions.get("musicHud")[1] == 77);
         check("config ukuran dan warna island tersimpan", b.islandW == 300 && b.islandH == 100 && b.islandColor == 3);
         check("config island jeda, kartu, ulang, acak tersimpan",
                 b.islandShowPaused && !b.islandCard && b.repeatMode == 2 && b.shuffle

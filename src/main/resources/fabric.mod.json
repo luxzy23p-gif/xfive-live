@@ -3,7 +3,7 @@
   "id": "xfive-live",
   "version": "${version}",
   "name": "X FIVE LIVE",
-  "description": "Client-side HUD: music player, synced lyrics, and live chat panel.",
+  "description": "Client-side HUD: music player, and synced lyrics.",
   "icon": "assets/xfive-live/icon.png",
   "authors": [],
   "license": "All-Rights-Reserved",

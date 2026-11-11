@@ -43,20 +43,13 @@ public final class XFiveConfig {
     public int lyricsPosition = 2; // 0 = atas, 1 = tengah, 2 = bawah
     public boolean lyricsMinimal = false;
 
-    // Live chat
-    public boolean enableChat = true;
-    public int maxMessages = 50;
-    public float chatOpacity = 0.7f;
-    public int messageDurationSec = 15;
-    public int messageSpeedMs = 400;
-
     // Appearance
-    public String theme = "purple"; // purple | cyan
+    public String theme = "purple"; // lihat Themes.IDS
     public float customTransparency = 0.85f;
     public boolean animations = true;
 
     /**
-     * Posisi HUD per komponen: musicHud, dynamicIsland, lyricsHud, chatHud. Nilai = {x, y}.
+     * Posisi HUD per komponen: musicHud, dynamicIsland, lyricsHud. Nilai = {x, y}.
      * Nilai -1 berarti posisi default (dynamicIsland di tengah atas, lyricsHud mengikuti preset).
      */
     public final Map<String, int[]> hudPositions = new HashMap<>();
@@ -75,7 +68,6 @@ public final class XFiveConfig {
     public void resetHudPositions() {
         hudPositions.clear();
         hudPositions.put("musicHud", new int[] {8, 8});
-        hudPositions.put("chatHud", new int[] {8, 120});
         hudPositions.put("dynamicIsland", new int[] {-1, -1});
         hudPositions.put("lyricsHud", new int[] {-1, -1});
     }
@@ -116,13 +108,7 @@ public final class XFiveConfig {
         lyricsPosition = integer(p, "lyrics.position", lyricsPosition, 0, 2);
         lyricsMinimal = bool(p, "lyrics.minimal", lyricsMinimal);
 
-        enableChat = bool(p, "chat.enable", enableChat);
-        maxMessages = integer(p, "chat.maxMessages", maxMessages, 1, 200);
-        chatOpacity = flt(p, "chat.opacity", chatOpacity, 0.1f, 1f);
-        messageDurationSec = integer(p, "chat.durationSec", messageDurationSec, 1, 600);
-        messageSpeedMs = integer(p, "chat.speedMs", messageSpeedMs, 0, 5000);
-
-        theme = p.getProperty("appearance.theme", theme).equals("cyan") ? "cyan" : "purple";
+        theme = Themes.normalize(p.getProperty("appearance.theme", theme));
         customTransparency = flt(p, "appearance.transparency", customTransparency, 0.1f, 1f);
         animations = bool(p, "appearance.animations", animations);
 
@@ -161,12 +147,6 @@ public final class XFiveConfig {
         put(p, "lyrics.highlightColor", highlightColor);
         put(p, "lyrics.position", lyricsPosition);
         put(p, "lyrics.minimal", lyricsMinimal);
-
-        put(p, "chat.enable", enableChat);
-        put(p, "chat.maxMessages", maxMessages);
-        put(p, "chat.opacity", chatOpacity);
-        put(p, "chat.durationSec", messageDurationSec);
-        put(p, "chat.speedMs", messageSpeedMs);
 
         put(p, "appearance.theme", theme);
         put(p, "appearance.transparency", customTransparency);

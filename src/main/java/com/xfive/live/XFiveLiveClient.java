@@ -1,11 +1,9 @@
 package com.xfive.live;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
 import com.xfive.live.gui.ControlCenterScreen;
 import com.xfive.live.hud.DynamicIslandHud;
-import com.xfive.live.hud.LiveChatHud;
 import com.xfive.live.hud.LyricsHud;
 import com.xfive.live.hud.MusicHud;
 import com.xfive.live.lyrics.LyricsManager;
@@ -40,7 +38,6 @@ public final class XFiveLiveClient implements ClientModInitializer {
     public static final XFiveConfig CONFIG = new XFiveConfig(FabricLoader.getInstance().getConfigDir());
     public static final MusicManager MUSIC = new MusicManager();
     public static final LyricsManager LYRICS = new LyricsManager();
-    public static final ChatManager CHAT = new ChatManager();
 
     static final String SOURCE_FILE = "folder-musik.txt";
     private static final String SOURCE_TEMPLATE = String.join("\n",
@@ -55,7 +52,6 @@ public final class XFiveLiveClient implements ClientModInitializer {
 
     private static KeyMapping hudKey;
     private static KeyMapping lyricsKey;
-    private static KeyMapping chatKey;
     private static KeyMapping settingsKey;
     private static KeyMapping musicCenterKey;
     private static PlaylistManager.Track lastTrack;
@@ -69,15 +65,11 @@ public final class XFiveLiveClient implements ClientModInitializer {
         MUSIC.setVolume(CONFIG.defaultVolume);
         MUSIC.setRepeatMode(CONFIG.repeatMode);
         MUSIC.setShuffle(CONFIG.shuffle);
-        CHAT.setMaxMessages(CONFIG.maxMessages);
-        CHAT.setDurationMs(CONFIG.messageDurationSec * 1000L);
-        CHAT.setIntervalMs(CONFIG.messageSpeedMs);
 
         KeyMapping.Category category =
                 KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
         hudKey = register("key.xfive.hud", GLFW.GLFW_KEY_F8, category);
         lyricsKey = register("key.xfive.lyrics", GLFW.GLFW_KEY_F9, category);
-        chatKey = register("key.xfive.chat", GLFW.GLFW_KEY_F10, category);
         settingsKey = register("key.xfive.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, category);
         // Satu pintasan terpadu: buka daftar lagu, pemutar, dan pengaturan audio sekaligus.
         musicCenterKey = register("key.xfive.music_center", GLFW.GLFW_KEY_F6, category);
@@ -95,7 +87,6 @@ public final class XFiveLiveClient implements ClientModInitializer {
                         MusicHud.render(graphics);
                     }
                     LyricsHud.render(graphics);
-                    LiveChatHud.render(graphics);
                 });
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> onTick());
@@ -262,16 +253,11 @@ public final class XFiveLiveClient implements ClientModInitializer {
             CONFIG.enableLyrics = !CONFIG.enableLyrics;
             CONFIG.save();
         }
-        while (chatKey.consumeClick()) {
-            CONFIG.enableChat = !CONFIG.enableChat;
-            CONFIG.save();
-        }
 
         while (musicCenterKey.consumeClick()) {
             Minecraft.getInstance().setScreenAndShow(ControlCenterScreen.audio());
         }
 
-        CHAT.update(System.currentTimeMillis());
         DynamicIslandHud.onTick();
 
         if (CONFIG.enableMusic) {
