@@ -23,6 +23,8 @@ public final class XFiveConfig {
     public int islandH = 84;            // tinggi kartu, 60..160
     public int islandColor = 0;         // 0 ikut tema, 1..5 warna tetap
     public boolean islandShowPaused = false;
+    public boolean islandAutoHide = true;  // kartu menutup sendiri setelah beberapa detik
+    public int islandShowSec = 5;          // lama kartu terbuka, 2..30 detik
     public boolean islandCard = true;   // true = kartu lengkap, false = pil kecil
 
     // Music
@@ -96,6 +98,8 @@ public final class XFiveConfig {
         islandH = integer(p, "island.height", islandH, 60, 160);
         islandColor = integer(p, "island.color", islandColor, 0, 5);
         islandShowPaused = bool(p, "island.showPaused", islandShowPaused);
+        islandAutoHide = bool(p, "island.autoHide", islandAutoHide);
+        islandShowSec = integer(p, "island.showSec", islandShowSec, 2, 30);
         islandCard = bool(p, "island.card", islandCard);
 
         enableMusic = bool(p, "music.enable", enableMusic);
@@ -140,6 +144,8 @@ public final class XFiveConfig {
         put(p, "island.height", islandH);
         put(p, "island.color", islandColor);
         put(p, "island.showPaused", islandShowPaused);
+        put(p, "island.autoHide", islandAutoHide);
+        put(p, "island.showSec", islandShowSec);
         put(p, "island.card", islandCard);
 
         put(p, "music.enable", enableMusic);

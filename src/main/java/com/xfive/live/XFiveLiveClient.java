@@ -3,9 +3,7 @@ package com.xfive.live;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.xfive.live.chat.ChatManager;
 import com.xfive.live.config.XFiveConfig;
-import com.xfive.live.gui.MusicControlScreen;
-import com.xfive.live.gui.SongListScreen;
-import com.xfive.live.gui.XFiveScreen;
+import com.xfive.live.gui.HubScreen;
 import com.xfive.live.hud.DynamicIslandHud;
 import com.xfive.live.hud.LiveChatHud;
 import com.xfive.live.hud.LyricsHud;
@@ -60,7 +58,6 @@ public final class XFiveLiveClient implements ClientModInitializer {
     private static KeyMapping chatKey;
     private static KeyMapping settingsKey;
     private static KeyMapping controlsKey;
-    private static KeyMapping listKey;
     private static KeyMapping playKey;
     private static KeyMapping nextKey;
     private static KeyMapping prevKey;
@@ -88,7 +85,6 @@ public final class XFiveLiveClient implements ClientModInitializer {
         chatKey = register("key.xfive.chat", GLFW.GLFW_KEY_F10, category);
         settingsKey = register("key.xfive.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, category);
         controlsKey = register("key.xfive.controls", GLFW.GLFW_KEY_F7, category);
-        listKey = register("key.xfive.list", GLFW.GLFW_KEY_F6, category);
         // Tombol musik ini belum dipasang secara bawaan. Pasang lewat Options > Controls.
         playKey = register("key.xfive.play", GLFW.GLFW_KEY_UNKNOWN, category);
         nextKey = register("key.xfive.next", GLFW.GLFW_KEY_UNKNOWN, category);
@@ -266,7 +262,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
 
     private static void onTick() {
         while (settingsKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new XFiveScreen());
+            Minecraft.getInstance().setScreenAndShow(new HubScreen(null, HubScreen.PAGE_DISPLAY));
         }
         while (hudKey.consumeClick()) {
             CONFIG.showHud = !CONFIG.showHud;
@@ -282,10 +278,7 @@ public final class XFiveLiveClient implements ClientModInitializer {
         }
 
         while (controlsKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new MusicControlScreen(null));
-        }
-        while (listKey.consumeClick()) {
-            Minecraft.getInstance().setScreenAndShow(new SongListScreen(null));
+            Minecraft.getInstance().setScreenAndShow(new HubScreen(null, HubScreen.PAGE_SONGS));
         }
         while (playKey.consumeClick()) {
             MUSIC.togglePause();

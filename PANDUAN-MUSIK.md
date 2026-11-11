@@ -44,25 +44,21 @@ Mod tidak bisa membuka pemilih file dari HP. Karena itu lagu harus disalin manua
 5. Tekan **Lagu berikutnya** atau **Lagu sebelumnya** untuk pindah lagu.
 6. Tekan **Tutup** untuk keluar dari menu. Pengaturan akan tersimpan otomatis.
 
-## Tambah lagu langsung dari game
+## Menu X FIVE LIVE (semua dalam satu jendela)
 
-1. Tekan **F6** (atau Right Shift, lalu **Daftar lagu**). Tidak perlu membuka pengaturan dulu.
-2. Daftar lagu bisa digeser dengan jari, dan ada kotak **cari** di atas. Ketuk satu lagu untuk memutar.
-3. Untuk menambah lagu, ketik path folder atau file lagu di kotak bawah. Contoh: `/storage/emulated/0/Music`
-4. Tekan **Tambah**. Lagu langsung masuk ke daftar tanpa restart Minecraft.
+Tekan **F7** (lagu) atau **Right Shift** (tampilan). Mouse otomatis aktif saat jendela terbuka. Satu jendela ini berisi semuanya:
 
-Jika path tidak ditemukan atau bukan MP3, OGG, atau WAV, status akan menjelaskan alasannya.
+- **Lagu**: daftar lagu bergaya playlist. Geser dengan jari, ketuk lagu untuk memutar, ketik di kotak cari. Tekan **+ Tambah**, isi path folder atau file lagu (contoh `/storage/emulated/0/Music`), lalu **Simpan**.
+- **Tampilan**: nyalakan atau matikan HUD, Dynamic Island, lirik, chat; ganti tema dan warna; atur transparansi, lebar dan tinggi Island, lama tampil, ukuran lirik.
+- **Audio**: volume, ulang, acak, berhenti, putar otomatis, segarkan daftar lagu.
+- **Edit HUD**: geser kotak HUD dengan jari. Tarik titik kecil di pojok kanan bawah Island untuk mengubah ukuran. Tekan **Selesai** jika sudah.
+- **Bar pemutar di bawah**: sebelumnya, putar/jeda, berikutnya, progres lagu (ketuk atau geser), acak, ulang, dan volume.
 
-## Kontrol Dynamic Island
+Tekan **Tutup** atau Esc untuk keluar. Semua pengaturan tersimpan otomatis.
 
-Pop-up di dalam game tidak bisa diklik, jadi tombolnya ada di layar kontrol:
+## Dynamic Island
 
-1. Tekan **F7**, atau tekan Right Shift lalu **Kontrol Dynamic Island**.
-2. Di kartu, ketuk tombol sebelumnya, jeda/putar, dan berikutnya. Ketuk bar progres untuk pindah posisi lagu.
-3. **Berhenti**, **Ulang** (Mati, Semua, Satu), dan **Acak** ada di bawah kartu.
-4. Slider **Lebar** dan **Tinggi** mengatur besar kartu (bisa dibuat lebar dan panjang). **Reset ukuran** mengembalikan ke bawaan. **Warna**, **Tampil saat jeda**, dan **Tampilan** (Kartu atau Pil) mengatur bentuk pop-up.
-5. Di menu Right Shift, geser kotak Island dengan jari, dan tarik kotak kecil di pojok kanan bawahnya untuk mengubah ukuran.
-6. Tombol **Daftar lagu** di layar ini membuka daftar lagu langsung.
+Saat lagu mulai, berganti, atau dijeda, kapsul kecil muncul di atas layar, membuka menjadi kartu, lalu menutup sendiri setelah beberapa detik. Di halaman **Tampilan** kamu bisa mematikan **Auto sembunyi** agar kartu tetap tampil, memilih bentuk Kartu atau Pil, dan mengatur lama tampil.
 
 Tombol putar, berikutnya, sebelumnya, berhenti, dan ulang juga bisa dipasang di **Options → Controls**, kategori X FIVE LIVE. Secara bawaan belum dipasang.
 
@@ -82,16 +78,6 @@ Kalau lagu ada di folder lain di HP (misalnya Music atau Download):
 
 Catatan: cara paling mudah dan paling pasti adalah menyalin lagu langsung ke folder **xfive-music**.
 
-## Menggeser HUD
-
-1. Tekan **Right Shift** untuk membuka menu X FIVE LIVE.
-2. Tahan klik kiri (atau jari di layar) pada kotak HUD yang ingin dipindah, lalu geser.
-3. Lepas untuk menaruhnya. Posisi tersimpan otomatis.
-4. Kotak yang disorot lebih terang saat kursor berada di atasnya. Yang bisa digeser: Musik atau Dynamic Island, Lirik, dan Chat.
-5. Tombol **Reset posisi HUD** mengembalikan semua HUD ke posisi awal.
-
-Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawah. Memilih posisi ini juga menghapus posisi lirik yang digeser manual.
-
 ## Kalau musik tidak berbunyi
 
 - Pastikan formatnya benar-benar MP3, OGG, atau WAV. Mengganti nama file dari .m4a atau .webm menjadi .mp3 tidak membuat file itu jadi MP3. Kalau status menulis "M4A" atau "WebM", ubah file itu dengan aplikasi konverter ke MP3 atau OGG.
@@ -107,5 +93,5 @@ Tombol **Posisi lirik** tetap bisa dipakai untuk memilih Atas, Tengah, atau Bawa
 ## Batasan saat ini
 
 - Tidak ada koneksi ke Spotify atau YouTube. Musik hanya berasal dari file di HP.
-- Tombol kontrol ada di layar F7 atau menu Right Shift, karena HUD di dalam game tidak bisa diklik.
+- HUD di dalam game tidak bisa diklik (kursor terkunci). Tekan F7 untuk membuka menu dan mengendalikan musik.
 - Pemutaran di Android belum diuji langsung di perangkat. Kalau tidak berbunyi, kirim status yang muncul di menu.

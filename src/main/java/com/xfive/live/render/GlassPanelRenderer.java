@@ -31,10 +31,9 @@ public final class GlassPanelRenderer {
         return Minecraft.getInstance().font;
     }
 
+    /** Panel kaca (liquid glass) untuk HUD. Lihat Glass.panel. */
     public static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h, float alpha, int accentRgb) {
-        g.fill(x, y, x + w, y + h, argb(BACKGROUND, alpha));
-        g.fill(x, y, x + w, y + 1, argb(accentRgb, 0.9f));
-        g.fill(x, y + h - 1, x + w, y + h, argb(accentRgb, 0.35f));
+        Glass.panel(g, x, y, w, h, 6, alpha, accentRgb);
     }
 
     public static void text(GuiGraphicsExtractor g, Font font, String s, int x, int y, int rgb) {
